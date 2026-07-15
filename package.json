@@ -1,0 +1,20 @@
+{
+  "name": "voice-ai-dsa-mentor",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n backend,web -c blue,green \"python3 -m uvicorn apps.backend.main:app --reload --port 4000\" \"npm run dev --prefix apps/web\"",
+    "dev:web": "npm run dev --prefix apps/web",
+    "dev:backend": "python3 -m uvicorn apps.backend.main:app --reload --port 4000",
+    "build": "npm run build --prefix apps/web",
+    "typecheck": "npm run typecheck --prefix apps/web",
+    "lint": "npm run lint --prefix apps/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "typescript": "^5.6.3"
+  }
+}
