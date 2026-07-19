@@ -1,5 +1,6 @@
 # dependencies
 node_modules/
+.venv/
 
 # build outputs
 dist/
@@ -22,3 +23,5 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+__pycache__/

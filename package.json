@@ -6,9 +6,9 @@
     "apps/web"
   ],
   "scripts": {
-    "dev": "concurrently -k -n backend,web -c blue,green \"python3 -m uvicorn apps.backend.main:app --reload --port 4000\" \"npm run dev --prefix apps/web\"",
+    "dev": "concurrently -k -n backend,web -c blue,green \"sh ./scripts/dev-backend.sh\" \"npm run dev --prefix apps/web\"",
     "dev:web": "npm run dev --prefix apps/web",
-    "dev:backend": "python3 -m uvicorn apps.backend.main:app --reload --port 4000",
+    "dev:backend": "sh ./scripts/dev-backend.sh",
     "build": "npm run build --prefix apps/web",
     "typecheck": "npm run typecheck --prefix apps/web",
     "lint": "npm run lint --prefix apps/web"
