@@ -27,7 +27,7 @@ export default function ProblemWorkspace({
   onNextProblem,
   onSignOut
 }: ProblemWorkspaceProps) {
-  const [language, setLanguage] = useState<CodeLanguage>("cpp");
+  const [language, setLanguage] = useState<CodeLanguage>("python");
   const [codeByLanguage, setCodeByLanguage] = useState<Record<CodeLanguage, string>>({
     cpp: getStarterCode("cpp"),
     python: getStarterCode("python")
