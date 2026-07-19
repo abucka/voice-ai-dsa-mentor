@@ -1,6 +1,7 @@
 # Voice AI DSA Mentor
 
-A starter repository for a voice-enabled DSA coaching assistant.
+Learning DSA is difficult because explanations are generic and learners often don't know why their solution is wrong.
+Voice AI DSA Mentor is an AI tutor that helps users learn data structures and algorithms through interactive coding, personalized explanations, and voice conversations.
 
 ## What is included
 
@@ -8,15 +9,13 @@ A starter repository for a voice-enabled DSA coaching assistant.
 - apps/backend: Python + FastAPI backend for orchestration and AI hooks
 - CI workflow for lint, type-check, and build
 
-## Quick start
-
 ## Run locally
 
 ### Prerequisites
 
 - Node.js 18+
 - npm 9+
-- Python 3.11+
+- Python 3.13+
 
 ### 1. Install dependencies
 
@@ -29,10 +28,12 @@ npm install
 Create and activate a virtual environment for the backend, then install Python packages:
 
 ```bash
-python3 -m venv .venv
+/usr/local/bin/python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -r apps/backend/requirements.txt
 ```
+
+If `python3.13` is already on your `PATH`, you can use `python3.13 -m venv .venv` instead.
 
 ### 2. Optional environment file
 
@@ -51,6 +52,8 @@ Run both backend and frontend together from the repo root:
 ```bash
 npm run dev
 ```
+
+The root dev script uses `scripts/dev-backend.sh`, which prefers `.venv/bin/python` automatically, so you do not need to activate the virtual environment before starting the app once `.venv` has been created.
 
 This starts:
 
@@ -84,7 +87,6 @@ If you want to run each app in its own terminal:
 Backend:
 
 ```bash
-source .venv/bin/activate
 npm run dev:backend
 ```
 
@@ -127,3 +129,11 @@ Defined there today:
 - `VITE_API_BASE_URL=http://localhost:4000`
 
 At the moment, the local dev scripts already start the backend on port `4000`, and the starter UI does not yet require an API key to render.
+
+## Backend dependency notes
+
+The backend dependency versions currently used for local startup are:
+
+- `fastapi==0.116.1`
+- `uvicorn==0.33.0`
+- `pydantic==2.10.6`
