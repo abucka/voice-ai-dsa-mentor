@@ -1,4 +1,8 @@
-import { DsaProblem, MentorMode } from "../types";
+import { useMemo, useState } from "react";
+import CodeEditorPanel from "./CodeEditorPanel";
+import { CODE_LANGUAGES, getStarterCode } from "../constants/codeTemplates";
+import { DsaProblem, CodeLanguage, MentorMode } from "../types";
+import { runCode } from "../services/codeRunner";
 
 type ProblemWorkspaceProps = {
   signedInEmail: string;
@@ -23,6 +27,64 @@ export default function ProblemWorkspace({
   onNextProblem,
   onSignOut
 }: ProblemWorkspaceProps) {
+  const [language, setLanguage] = useState<CodeLanguage>("cpp");
+  const [codeByLanguage, setCodeByLanguage] = useState<Record<CodeLanguage, string>>({
+    cpp: getStarterCode("cpp"),
+    python: getStarterCode("python")
+  });
+  const [runOutput, setRunOutput] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
+
+  const code = codeByLanguage[language];
+  const filename = useMemo(() => CODE_LANGUAGES.find((entry) => entry.id === language)?.filename ?? "main.cpp", [language]);
+
+  function handleLanguageChange(nextLanguage: CodeLanguage) {
+    setLanguage(nextLanguage);
+    setCodeByLanguage((current) => ({
+      ...current,
+      [nextLanguage]: current[nextLanguage] || getStarterCode(nextLanguage)
+    }));
+  }
+
+  function handleReset() {
+    setCodeByLanguage((current) => ({
+      ...current,
+      [language]: getStarterCode(language)
+    }));
+  }
+
+  function handleCodeChange(nextCode: string) {
+    setCodeByLanguage((current) => ({
+      ...current,
+      [language]: nextCode
+    }));
+  }
+
+  async function handleRunCode() {
+    setIsRunning(true);
+    setRunOutput("");
+
+    try {
+      const result = await runCode(language, code);
+      const outputText = [
+        `Exit code: ${result.exitCode}`,
+        result.timedOut ? "Timed out: yes" : "Timed out: no",
+        "",
+        "STDOUT",
+        result.stdout || "(empty)",
+        "",
+        "STDERR",
+        result.stderr || "(empty)"
+      ].join("\n");
+
+      setRunOutput(outputText);
+    } catch (error) {
+      setRunOutput(error instanceof Error ? error.message : "Unable to run code.");
+    } finally {
+      setIsRunning(false);
+    }
+  }
+
   return (
     <section className="panel workspace">
       <div className="workspaceHeader">
@@ -61,6 +123,26 @@ export default function ProblemWorkspace({
         </div>
         <p className="statusRow">{isSavingProgress ? "Saving progress..." : "Progress synced"}</p>
       </article>
+
+      <CodeEditorPanel
+        language={language}
+        filename={filename}
+        code={code}
+        onLanguageChange={handleLanguageChange}
+        onCodeChange={handleCodeChange}
+        onReset={handleReset}
+      />
+
+      <div className="runControls">
+        <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
+          {isRunning ? "Running..." : "Run Code"}
+        </button>
+      </div>
+
+      <section className="outputPanel" aria-live="polite">
+        <p className="editorLabel">Output</p>
+        <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
+      </section>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 export type MentorMode = "explain" | "interview" | "hints-only";
 export type Screen = "landing" | "signin" | "problem";
+export type CodeLanguage = "cpp" | "python";
 
 export type DsaProblem = {
   id: string;

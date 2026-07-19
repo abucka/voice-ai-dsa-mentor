@@ -183,6 +183,96 @@ button {
   color: var(--subtle);
 }
 
+.editorPanel {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.editorToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.editorLabel {
+  margin: 0;
+  font-weight: 700;
+}
+
+.editorHint {
+  margin: 0.2rem 0 0;
+  color: var(--subtle);
+}
+
+.editorControls {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.editorControls select {
+  min-width: 120px;
+}
+
+.editorReset {
+  margin-top: 0;
+  width: auto;
+  white-space: nowrap;
+}
+
+.editorFilename {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--subtle);
+}
+
+.runControls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.9rem;
+}
+
+.runControls .primary {
+  width: auto;
+  min-width: 150px;
+  margin-top: 0;
+}
+
+.outputPanel {
+  margin-top: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.outputBox {
+  margin: 0.45rem 0 0;
+  min-height: 120px;
+  border-radius: 12px;
+  padding: 0.9rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 .modeCopy {
   margin: 0.6rem 0 0;
   color: color-mix(in srgb, var(--subtle) 90%, black 10%);
@@ -210,7 +300,26 @@ button {
     flex-direction: column;
   }
 
+  .editorToolbar,
+  .editorControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .runControls {
+    justify-content: stretch;
+  }
+
   .workspaceHeader .ghost {
+    width: 100%;
+  }
+
+  .editorControls select,
+  .editorControls .editorReset {
+    width: 100%;
+  }
+
+  .runControls .primary {
     width: 100%;
   }
 }
