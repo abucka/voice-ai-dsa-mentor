@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import LandingScreen from "./components/LandingScreen";
 import ProblemWorkspace from "./components/ProblemWorkspace";
 import SignInScreen from "./components/SignInScreen";
+import { REQUIRE_SIGNIN_PARAM } from "./config/appConfig";
 import { MODES, PROBLEMS } from "./constants/problems";
 import { persistLastProblem, signIn } from "./services/authService";
 import { getInitialProblemId, saveProblemIdLocally } from "./services/progressStorage";
@@ -31,7 +32,7 @@ export default function App() {
   );
 
   function handleStartLearning() {
-    setScreen("signin");
+    setScreen(REQUIRE_SIGNIN_PARAM ? "signin" : "problem");
     setError("");
   }
 
