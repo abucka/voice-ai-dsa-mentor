@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import CodeEditorPanel from "./CodeEditorPanel";
-import { CODE_LANGUAGES, getStarterCode } from "../constants/codeTemplates";
+import { CODE_LANGUAGES } from "../constants/codeTemplates";
 import { DsaProblem, CodeLanguage, MentorMode } from "../types";
 import { runCode } from "../services/codeRunner";
 
@@ -27,10 +27,10 @@ export default function ProblemWorkspace({
   onNextProblem,
   onSignOut
 }: ProblemWorkspaceProps) {
-  const [language, setLanguage] = useState<CodeLanguage>("python");
+  const [language, setLanguage] = useState<CodeLanguage>("cpp");
   const [codeByLanguage, setCodeByLanguage] = useState<Record<CodeLanguage, string>>({
-    cpp: getStarterCode("cpp"),
-    python: getStarterCode("python")
+    cpp: "",
+    python: ""
   });
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
@@ -42,14 +42,14 @@ export default function ProblemWorkspace({
     setLanguage(nextLanguage);
     setCodeByLanguage((current) => ({
       ...current,
-      [nextLanguage]: current[nextLanguage] || getStarterCode(nextLanguage)
+      [nextLanguage]: current[nextLanguage] || ""
     }));
   }
 
   function handleReset() {
     setCodeByLanguage((current) => ({
       ...current,
-      [language]: getStarterCode(language)
+      [language]: ""
     }));
   }
 
