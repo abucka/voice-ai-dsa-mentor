@@ -103,46 +103,35 @@ export default function ProblemWorkspace({
         <h3>{currentProblem.title}</h3>
         <p>{currentProblem.summary}</p>
 
-        <label htmlFor="mode">Mentor mode</label>
-        <select id="mode" value={mode} onChange={(event) => onModeChange(event.target.value as MentorMode)}>
-          {modes.map((currentMode) => (
-            <option key={currentMode} value={currentMode}>
-              {currentMode}
-            </option>
-          ))}
-        </select>
-        <p className="modeCopy">{subtitle}</p>
+        <CodeEditorPanel
+            language={language}
+            filename={filename}
+            code={code}
+            onLanguageChange={handleLanguageChange}
+            onCodeChange={handleCodeChange}
+            onReset={handleReset}
+        />
+        <div className="runControls">
+            <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
+            {isRunning ? "Running..." : "Run Code"}
+            </button>
+        </div>
+        <section className="outputPanel" aria-live="polite">
+            <p className="editorLabel">Output</p>
+            <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
+        </section>
 
         <div className="actions">
           <button type="button" className="primary">
-            Resume Problem
+            Submit
           </button>
           <button type="button" className="ghost" onClick={onNextProblem}>
-            Simulate Next Problem
+            Next Problem
           </button>
         </div>
         <p className="statusRow">{isSavingProgress ? "Saving progress..." : "Progress synced"}</p>
       </article>
 
-      <CodeEditorPanel
-        language={language}
-        filename={filename}
-        code={code}
-        onLanguageChange={handleLanguageChange}
-        onCodeChange={handleCodeChange}
-        onReset={handleReset}
-      />
-
-      <div className="runControls">
-        <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
-          {isRunning ? "Running..." : "Run Code"}
-        </button>
-      </div>
-
-      <section className="outputPanel" aria-live="polite">
-        <p className="editorLabel">Output</p>
-        <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
-      </section>
     </section>
   );
 }

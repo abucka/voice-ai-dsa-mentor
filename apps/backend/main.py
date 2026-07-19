@@ -1,4 +1,9 @@
 from datetime import datetime, timezone
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
 from typing import Literal
 from uuid import uuid4
 
@@ -8,6 +13,7 @@ from pydantic import BaseModel, Field
 
 
 MentorMode = Literal["explain", "interview", "hints-only"]
+CodeLanguage = Literal["cpp", "python"]
 ProblemId = Literal[
     "two-sum",
     "valid-parentheses",
@@ -51,6 +57,19 @@ class LastProblemResponse(BaseModel):
 
 class LastProblemUpdateRequest(BaseModel):
     problemId: ProblemId
+
+
+class RunCodeRequest(BaseModel):
+    language: CodeLanguage
+    code: str = Field(min_length=1)
+
+
+class RunCodeResponse(BaseModel):
+    language: CodeLanguage
+    stdout: str
+    stderr: str
+    exitCode: int
+    timedOut: bool
 
 
 app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
@@ -120,3 +139,93 @@ def update_last_problem(
     email = require_authenticated_email(authorization)
     user_last_problem[email] = payload.problemId
     return LastProblemResponse(email=email, lastProblemId=user_last_problem[email])
+
+
+@app.post("/api/code/run", response_model=RunCodeResponse, status_code=200)
+def run_code(payload: RunCodeRequest) -> RunCodeResponse:
+    timeout_seconds = 5
+
+    with tempfile.TemporaryDirectory() as temp_dir_name:
+        temp_dir = Path(temp_dir_name)
+
+        if payload.language == "python":
+            code_file = temp_dir / "main.py"
+            code_file.write_text(payload.code, encoding="utf-8")
+
+            try:
+                completed = subprocess.run(
+                    [sys.executable, str(code_file)],
+                    cwd=temp_dir,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout_seconds,
+                )
+            except subprocess.TimeoutExpired as error:
+                return RunCodeResponse(
+                    language=payload.language,
+                    stdout=error.stdout or "",
+                    stderr=error.stderr or "Timed out while running Python code",
+                    exitCode=124,
+                    timedOut=True,
+                )
+
+            return RunCodeResponse(
+                language=payload.language,
+                stdout=completed.stdout,
+                stderr=completed.stderr,
+                exitCode=completed.returncode,
+                timedOut=False,
+            )
+
+        compiler = shutil.which("g++")
+        if not compiler:
+            raise HTTPException(status_code=500, detail="g++ is not installed on the server")
+
+        code_file = temp_dir / "main.cpp"
+        binary_file = temp_dir / "main"
+        code_file.write_text(payload.code, encoding="utf-8")
+
+        compile_process = subprocess.run(
+            [compiler, "-std=c++17", "-O2", str(code_file), "-o", str(binary_file)],
+            cwd=temp_dir,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+        
+        
+        
+
+        if compile_process.returncode != 0:
+            return RunCodeResponse(
+                language=payload.language,
+                stdout=compile_process.stdout,
+                stderr=compile_process.stderr,
+                exitCode=compile_process.returncode,
+                timedOut=False,
+            )
+
+        try:
+            run_process = subprocess.run(
+                [str(binary_file)],
+                cwd=temp_dir,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as error:
+            return RunCodeResponse(
+                language=payload.language,
+                stdout=error.stdout or "",
+                stderr=error.stderr or "Timed out while running C++ code",
+                exitCode=124,
+                timedOut=True,
+            )
+
+        return RunCodeResponse(
+            language=payload.language,
+            stdout=run_process.stdout,
+            stderr=run_process.stderr,
+            exitCode=run_process.returncode,
+            timedOut=False,
+        )
