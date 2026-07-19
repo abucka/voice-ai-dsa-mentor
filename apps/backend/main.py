@@ -72,6 +72,33 @@ class RunCodeResponse(BaseModel):
     timedOut: bool
 
 
+class SubmitCodeRequest(BaseModel):
+    problemId: ProblemId
+    language: CodeLanguage
+    code: str = Field(min_length=1)
+
+
+class SubmitTestResult(BaseModel):
+    input: str
+    expectedOutput: str
+    actualOutput: str
+    passed: bool
+    exitCode: int
+    timedOut: bool
+    stderr: str
+    reason: str | None = None
+
+
+class SubmitCodeResponse(BaseModel):
+    problemId: ProblemId
+    language: CodeLanguage
+    passed: bool
+    passedTests: int
+    totalTests: int
+    note: str | None = None
+    results: list[SubmitTestResult]
+
+
 app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
 
 app.add_middleware(
@@ -98,6 +125,153 @@ def require_authenticated_email(authorization: str | None) -> str:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     return email
+
+
+SUBMISSION_TESTS: dict[ProblemId, list[tuple[str, str]]] = {
+    "two-sum": [
+        ("4 9\n2 7 11 15\n", "0 1\n"),
+        ("3 6\n3 2 4\n", "1 2\n"),
+    ],
+    "valid-parentheses": [
+        ("([{}])\n", "true\n"),
+        ("([)]\n", "false\n"),
+    ],
+    "longest-substring-no-repeat": [
+        ("abcabcbb\n", "3\n"),
+        ("bbbbb\n", "1\n"),
+    ],
+    "merge-k-sorted-lists": [
+        ("3\n1 4 5\n1 3 4\n2 6\n", "1 1 2 3 4 4 5 6\n"),
+        ("2\n1 2\n3 4\n", "1 2 3 4\n"),
+    ],
+}
+
+
+def normalize_output(value: str) -> str:
+    return value.strip()
+
+
+def execute_python_code(code: str, stdin_text: str) -> RunCodeResponse:
+    timeout_seconds = 5
+
+    with tempfile.TemporaryDirectory() as temp_dir_name:
+        temp_dir = Path(temp_dir_name)
+        code_file = temp_dir / "main.py"
+        code_file.write_text(code, encoding="utf-8")
+
+        try:
+            completed = subprocess.run(
+                [sys.executable, str(code_file)],
+                cwd=temp_dir,
+                input=stdin_text,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as error:
+            return RunCodeResponse(
+                language="python",
+                stdout=error.stdout or "",
+                stderr=error.stderr or "Timed out while running Python code",
+                exitCode=124,
+                timedOut=True,
+            )
+
+        return RunCodeResponse(
+            language="python",
+            stdout=completed.stdout,
+            stderr=completed.stderr,
+            exitCode=completed.returncode,
+            timedOut=False,
+        )
+
+
+def compile_cpp_code(temp_dir: Path, code: str) -> tuple[Path | None, RunCodeResponse | None]:
+    timeout_seconds = 5
+    compiler = shutil.which("g++")
+    if not compiler:
+        raise HTTPException(status_code=500, detail="g++ is not installed on the server")
+
+    code_file = temp_dir / "main.cpp"
+    binary_file = temp_dir / "main"
+    code_file.write_text(code, encoding="utf-8")
+
+    try:
+        compile_process = subprocess.run(
+            [compiler, "-std=c++17", "-O2", str(code_file), "-o", str(binary_file)],
+            cwd=temp_dir,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as error:
+        return (
+            None,
+            RunCodeResponse(
+                language="cpp",
+                stdout=error.stdout or "",
+                stderr=error.stderr or "Timed out while compiling C++ code",
+                exitCode=124,
+                timedOut=True,
+            ),
+        )
+
+    if compile_process.returncode != 0:
+        return (
+            None,
+            RunCodeResponse(
+                language="cpp",
+                stdout=compile_process.stdout,
+                stderr=compile_process.stderr,
+                exitCode=compile_process.returncode,
+                timedOut=False,
+            ),
+        )
+
+    return binary_file, None
+
+
+def execute_cpp_binary(binary_file: Path, stdin_text: str) -> RunCodeResponse:
+    timeout_seconds = 5
+
+    try:
+        run_process = subprocess.run(
+            [str(binary_file)],
+            cwd=binary_file.parent,
+            input=stdin_text,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as error:
+        return RunCodeResponse(
+            language="cpp",
+            stdout=error.stdout or "",
+            stderr=error.stderr or "Timed out while running C++ code",
+            exitCode=124,
+            timedOut=True,
+        )
+
+    return RunCodeResponse(
+        language="cpp",
+        stdout=run_process.stdout,
+        stderr=run_process.stderr,
+        exitCode=run_process.returncode,
+        timedOut=False,
+    )
+
+
+def execute_code(language: CodeLanguage, code: str, stdin_text: str) -> RunCodeResponse:
+    if language == "python":
+        return execute_python_code(code, stdin_text)
+
+    with tempfile.TemporaryDirectory() as temp_dir_name:
+        temp_dir = Path(temp_dir_name)
+        binary_file, compile_result = compile_cpp_code(temp_dir, code)
+        if compile_result is not None:
+            return compile_result
+
+        return execute_cpp_binary(binary_file, stdin_text)
 
 
 @app.post("/api/session/start", response_model=SessionStartResponse, status_code=201)
@@ -143,89 +317,108 @@ def update_last_problem(
 
 @app.post("/api/code/run", response_model=RunCodeResponse, status_code=200)
 def run_code(payload: RunCodeRequest) -> RunCodeResponse:
-    timeout_seconds = 5
+    return execute_code(payload.language, payload.code, "")
 
-    with tempfile.TemporaryDirectory() as temp_dir_name:
-        temp_dir = Path(temp_dir_name)
 
-        if payload.language == "python":
-            code_file = temp_dir / "main.py"
-            code_file.write_text(payload.code, encoding="utf-8")
+@app.post("/api/code/submit", response_model=SubmitCodeResponse, status_code=200)
+def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
+    tests = SUBMISSION_TESTS.get(payload.problemId, [])
+    total_tests = len(tests)
+    results: list[SubmitTestResult] = []
 
-            try:
-                completed = subprocess.run(
-                    [sys.executable, str(code_file)],
-                    cwd=temp_dir,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout_seconds,
-                )
-            except subprocess.TimeoutExpired as error:
-                return RunCodeResponse(
+    if payload.language == "cpp":
+        with tempfile.TemporaryDirectory() as temp_dir_name:
+            temp_dir = Path(temp_dir_name)
+            binary_file, compile_result = compile_cpp_code(temp_dir, payload.code)
+
+            if compile_result is not None:
+                return SubmitCodeResponse(
+                    problemId=payload.problemId,
                     language=payload.language,
-                    stdout=error.stdout or "",
-                    stderr=error.stderr or "Timed out while running Python code",
-                    exitCode=124,
-                    timedOut=True,
+                    passed=False,
+                    passedTests=0,
+                    totalTests=total_tests,
+                    note="Compilation failed",
+                    results=[
+                        SubmitTestResult(
+                            input="",
+                            expectedOutput="",
+                            actualOutput=compile_result.stdout,
+                            passed=False,
+                            exitCode=compile_result.exitCode,
+                            timedOut=compile_result.timedOut,
+                            stderr=compile_result.stderr,
+                            reason="Compilation failed",
+                        )
+                    ],
                 )
 
-            return RunCodeResponse(
+            passed_tests = 0
+            for test_input, expected_output in tests:
+                execution_result = execute_cpp_binary(binary_file, test_input)
+                actual_output = execution_result.stdout
+                passed = (
+                    not execution_result.timedOut
+                    and execution_result.exitCode == 0
+                    and normalize_output(actual_output) == normalize_output(expected_output)
+                )
+                if passed:
+                    passed_tests += 1
+
+                results.append(
+                    SubmitTestResult(
+                        input=test_input,
+                        expectedOutput=expected_output,
+                        actualOutput=actual_output,
+                        passed=passed,
+                        exitCode=execution_result.exitCode,
+                        timedOut=execution_result.timedOut,
+                        stderr=execution_result.stderr,
+                        reason=None if passed else "Output mismatch" if not execution_result.stderr else "Runtime error",
+                    )
+                )
+
+            return SubmitCodeResponse(
+                problemId=payload.problemId,
                 language=payload.language,
-                stdout=completed.stdout,
-                stderr=completed.stderr,
-                exitCode=completed.returncode,
-                timedOut=False,
+                passed=passed_tests == total_tests,
+                passedTests=passed_tests,
+                totalTests=total_tests,
+                note=None if passed_tests == total_tests else "One or more sample tests failed",
+                results=results,
             )
 
-        compiler = shutil.which("g++")
-        if not compiler:
-            raise HTTPException(status_code=500, detail="g++ is not installed on the server")
-
-        code_file = temp_dir / "main.cpp"
-        binary_file = temp_dir / "main"
-        code_file.write_text(payload.code, encoding="utf-8")
-
-        compile_process = subprocess.run(
-            [compiler, "-std=c++17", "-O2", str(code_file), "-o", str(binary_file)],
-            cwd=temp_dir,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
+    passed_tests = 0
+    for test_input, expected_output in tests:
+        execution_result = execute_python_code(payload.code, test_input)
+        actual_output = execution_result.stdout
+        passed = (
+            not execution_result.timedOut
+            and execution_result.exitCode == 0
+            and normalize_output(actual_output) == normalize_output(expected_output)
         )
-        
-        
-        
+        if passed:
+            passed_tests += 1
 
-        if compile_process.returncode != 0:
-            return RunCodeResponse(
-                language=payload.language,
-                stdout=compile_process.stdout,
-                stderr=compile_process.stderr,
-                exitCode=compile_process.returncode,
-                timedOut=False,
+        results.append(
+            SubmitTestResult(
+                input=test_input,
+                expectedOutput=expected_output,
+                actualOutput=actual_output,
+                passed=passed,
+                exitCode=execution_result.exitCode,
+                timedOut=execution_result.timedOut,
+                stderr=execution_result.stderr,
+                reason=None if passed else "Output mismatch" if not execution_result.stderr else "Runtime error",
             )
-
-        try:
-            run_process = subprocess.run(
-                [str(binary_file)],
-                cwd=temp_dir,
-                capture_output=True,
-                text=True,
-                timeout=timeout_seconds,
-            )
-        except subprocess.TimeoutExpired as error:
-            return RunCodeResponse(
-                language=payload.language,
-                stdout=error.stdout or "",
-                stderr=error.stderr or "Timed out while running C++ code",
-                exitCode=124,
-                timedOut=True,
-            )
-
-        return RunCodeResponse(
-            language=payload.language,
-            stdout=run_process.stdout,
-            stderr=run_process.stderr,
-            exitCode=run_process.returncode,
-            timedOut=False,
         )
+
+    return SubmitCodeResponse(
+        problemId=payload.problemId,
+        language=payload.language,
+        passed=passed_tests == total_tests,
+        passedTests=passed_tests,
+        totalTests=total_tests,
+        note=None if passed_tests == total_tests else "One or more sample tests failed",
+        results=results,
+    )

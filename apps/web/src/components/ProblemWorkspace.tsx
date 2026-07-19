@@ -3,6 +3,7 @@ import CodeEditorPanel from "./CodeEditorPanel";
 import { CODE_LANGUAGES } from "../constants/codeTemplates";
 import { DsaProblem, CodeLanguage, MentorMode } from "../types";
 import { runCode } from "../services/codeRunner";
+import { submitCode } from "../services/codeSubmitter";
 
 type ProblemWorkspaceProps = {
   signedInEmail: string;
@@ -34,6 +35,8 @@ export default function ProblemWorkspace({
   });
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [submitOutput, setSubmitOutput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const code = codeByLanguage[language];
   const filename = useMemo(() => CODE_LANGUAGES.find((entry) => entry.id === language)?.filename ?? "main.cpp", [language]);
@@ -85,6 +88,38 @@ export default function ProblemWorkspace({
     }
   }
 
+  async function handleSubmitCode() {
+    setIsSubmitting(true);
+    setSubmitOutput("");
+
+    try {
+      const result = await submitCode(currentProblem.id, language, code);
+      const output = [
+        result.passed ? "All sample tests passed." : "Some sample tests failed.",
+        `Passed ${result.passedTests}/${result.totalTests} sample tests.`,
+        result.note ? `Note: ${result.note}` : "",
+        "",
+        ...result.results.flatMap((test, index) => [
+          `Test ${index + 1}: ${test.passed ? "passed" : "failed"}`,
+          `Input: ${test.input.trim() || "(empty)"}`,
+          `Expected: ${test.expectedOutput.trim() || "(empty)"}`,
+          `Actual: ${test.actualOutput.trim() || "(empty)"}`,
+          test.stderr ? `Stderr: ${test.stderr.trim()}` : "",
+          test.reason ? `Reason: ${test.reason}` : "",
+          ""
+        ])
+      ]
+        .filter((line) => line !== "")
+        .join("\n");
+
+      setSubmitOutput(output || "Submission completed.");
+    } catch (error) {
+      setSubmitOutput(error instanceof Error ? error.message : "Unable to submit code.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <section className="panel workspace">
       <div className="workspaceHeader">
@@ -104,31 +139,35 @@ export default function ProblemWorkspace({
         <p>{currentProblem.summary}</p>
 
         <CodeEditorPanel
-            language={language}
-            filename={filename}
-            code={code}
-            onLanguageChange={handleLanguageChange}
-            onCodeChange={handleCodeChange}
-            onReset={handleReset}
+          language={language}
+          filename={filename}
+          code={code}
+          onLanguageChange={handleLanguageChange}
+          onCodeChange={handleCodeChange}
+          onReset={handleReset}
         />
         <div className="runControls">
-            <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
+          <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
             {isRunning ? "Running..." : "Run Code"}
-            </button>
+          </button>
         </div>
         <section className="outputPanel" aria-live="polite">
-            <p className="editorLabel">Output</p>
-            <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
+          <p className="editorLabel">Output</p>
+          <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
         </section>
 
         <div className="actions">
-          <button type="button" className="primary">
-            Submit
+          <button type="button" className="primary" onClick={handleSubmitCode} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
           <button type="button" className="ghost" onClick={onNextProblem}>
             Next Problem
           </button>
         </div>
+        <section className="outputPanel" aria-live="polite">
+          <p className="editorLabel">Submission</p>
+          <pre className="outputBox">{submitOutput || "Submit your code to check it against sample tests."}</pre>
+        </section>
         <p className="statusRow">{isSavingProgress ? "Saving progress..." : "Progress synced"}</p>
       </article>
 

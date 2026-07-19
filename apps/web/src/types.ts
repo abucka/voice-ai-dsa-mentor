@@ -20,3 +20,24 @@ export type LastProblemResponse = {
   email: string;
   lastProblemId: DsaProblem["id"];
 };
+
+export type SubmitTestResult = {
+  input: string;
+  expectedOutput: string;
+  actualOutput: string;
+  passed: boolean;
+  exitCode: number;
+  timedOut: boolean;
+  stderr: string;
+  reason: string | null;
+};
+
+export type SubmitCodeResponse = {
+  problemId: DsaProblem["id"];
+  language: CodeLanguage;
+  passed: boolean;
+  passedTests: number;
+  totalTests: number;
+  note: string | null;
+  results: SubmitTestResult[];
+};

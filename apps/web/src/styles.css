@@ -262,6 +262,29 @@ button {
   white-space: pre-wrap;
 }
 
+.successText {
+  margin: 0.6rem 0 0.15rem;
+  color: #166534;
+  font-size: 0.95rem;
+}
+
+.testBlock {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.testBlock:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.testLine {
+  margin: 0.2rem 0;
+  font-size: 0.92rem;
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
