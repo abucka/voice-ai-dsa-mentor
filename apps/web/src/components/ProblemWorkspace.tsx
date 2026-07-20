@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import CodeEditorPanel from "./CodeEditorPanel";
 import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
-import { DsaProblem, CodeLanguage, MentorMode } from "../types";
+import { DsaProblem, MentorMode } from "../types";
 import { runCode } from "../services/codeRunner";
 import { submitCode } from "../services/codeSubmitter";
 
@@ -28,49 +28,29 @@ export default function ProblemWorkspace({
   onNextProblem,
   onSignOut
 }: ProblemWorkspaceProps) {
-  function buildTemplates(problemId: DsaProblem["id"]): Record<CodeLanguage, string> {
-    return {
-      cpp: getSolveTemplate("cpp", problemId),
-      python: getSolveTemplate("python", problemId)
-    };
-  }
-
-  const [language, setLanguage] = useState<CodeLanguage>("cpp");
-  const [codeByLanguage, setCodeByLanguage] = useState<Record<CodeLanguage, string>>(() =>
-    buildTemplates(currentProblem.id)
-  );
+  const [code, setCode] = useState<string>(() => getSolveTemplate(currentProblem.id));
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const code = codeByLanguage[language];
-  const filename = useMemo(() => CODE_LANGUAGES.find((entry) => entry.id === language)?.filename ?? "main.cpp", [language]);
+  const language = "python" as const;
+  const filename = CODE_LANGUAGES[0]?.filename ?? "main.py";
 
   useEffect(() => {
-    setCodeByLanguage(buildTemplates(currentProblem.id));
+    setCode(getSolveTemplate(currentProblem.id));
   }, [currentProblem.id]);
 
-  function handleLanguageChange(nextLanguage: CodeLanguage) {
-    setLanguage(nextLanguage);
-    setCodeByLanguage((current) => ({
-      ...current,
-      [nextLanguage]: current[nextLanguage] || getSolveTemplate(nextLanguage, currentProblem.id)
-    }));
+  function handleReset() {
+    setCode(getSolveTemplate(currentProblem.id));
   }
 
-  function handleReset() {
-    setCodeByLanguage((current) => ({
-      ...current,
-      [language]: getSolveTemplate(language, currentProblem.id)
-    }));
+  function handleLanguageChange() {
+    // Python is the only supported language now.
   }
 
   function handleCodeChange(nextCode: string) {
-    setCodeByLanguage((current) => ({
-      ...current,
-      [language]: nextCode
-    }));
+    setCode(nextCode);
   }
 
   async function handleRunCode() {

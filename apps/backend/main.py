@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,7 +12,7 @@ from pydantic import BaseModel, Field
 
 
 MentorMode = Literal["explain", "interview", "hints-only"]
-CodeLanguage = Literal["cpp", "python"]
+CodeLanguage = Literal["python"]
 ProblemId = Literal[
     "two-sum",
     "valid-parentheses",
@@ -216,87 +215,6 @@ else:
 """
 
 
-def build_cpp_harness(problem_id: ProblemId) -> str:
-    if problem_id == "two-sum":
-        return """
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    int n, target;
-    cin >> n >> target;
-    vector<int> nums(n);
-    for (int i = 0; i < n; i++) cin >> nums[i];
-
-    auto result = solve(nums, target);
-    for (size_t i = 0; i < result.size(); i++) {
-        if (i) cout << ' ';
-        cout << result[i];
-    }
-    cout << '\\n';
-    return 0;
-}
-"""
-
-    if problem_id == "valid-parentheses":
-        return """
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    string s;
-    getline(cin, s);
-    if (s.empty() && !cin.eof()) getline(cin, s);
-    cout << (solve(s) ? "true" : "false") << '\\n';
-    return 0;
-}
-"""
-
-    if problem_id == "longest-substring-no-repeat":
-        return """
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    string s;
-    getline(cin, s);
-    if (s.empty() && !cin.eof()) getline(cin, s);
-    cout << solve(s) << '\\n';
-    return 0;
-}
-"""
-
-    return """
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    int k;
-    cin >> k;
-    string line;
-    getline(cin, line);
-
-    vector<vector<int>> lists;
-    for (int i = 0; i < k; i++) {
-        getline(cin, line);
-        stringstream ss(line);
-        vector<int> row;
-        int value;
-        while (ss >> value) row.push_back(value);
-        lists.push_back(row);
-    }
-
-    auto result = solve(lists);
-    for (size_t i = 0; i < result.size(); i++) {
-        if (i) cout << ' ';
-        cout << result[i];
-    }
-    cout << '\\n';
-    return 0;
-}
-"""
-
-
 def execute_python_code(problem_id: ProblemId, code: str, stdin_text: str) -> RunCodeResponse:
     timeout_seconds = 5
 
@@ -333,102 +251,8 @@ def execute_python_code(problem_id: ProblemId, code: str, stdin_text: str) -> Ru
         )
 
 
-def compile_cpp_code(problem_id: ProblemId, temp_dir: Path, code: str) -> tuple[Path | None, RunCodeResponse | None]:
-    timeout_seconds = 5
-    compiler = shutil.which("g++")
-    if not compiler:
-        raise HTTPException(status_code=500, detail="g++ is not installed on the server")
-
-    code_file = temp_dir / "main.cpp"
-    binary_file = temp_dir / "main"
-    wrapped_code = "\n".join(
-        [
-            "#include <bits/stdc++.h>",
-            "using namespace std;",
-            "",
-            code,
-            "",
-            build_cpp_harness(problem_id),
-        ]
-    )
-    code_file.write_text(wrapped_code, encoding="utf-8")
-
-    try:
-        compile_process = subprocess.run(
-            [compiler, "-std=c++17", "-O2", str(code_file), "-o", str(binary_file)],
-            cwd=temp_dir,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-        )
-    except subprocess.TimeoutExpired as error:
-        return (
-            None,
-            RunCodeResponse(
-                language="cpp",
-                stdout=error.stdout or "",
-                stderr=error.stderr or "Timed out while compiling C++ code",
-                exitCode=124,
-                timedOut=True,
-            ),
-        )
-
-    if compile_process.returncode != 0:
-        return (
-            None,
-            RunCodeResponse(
-                language="cpp",
-                stdout=compile_process.stdout,
-                stderr=compile_process.stderr,
-                exitCode=compile_process.returncode,
-                timedOut=False,
-            ),
-        )
-
-    return binary_file, None
-
-
-def execute_cpp_binary(binary_file: Path, stdin_text: str) -> RunCodeResponse:
-    timeout_seconds = 5
-
-    try:
-        run_process = subprocess.run(
-            [str(binary_file)],
-            cwd=binary_file.parent,
-            input=stdin_text,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-        )
-    except subprocess.TimeoutExpired as error:
-        return RunCodeResponse(
-            language="cpp",
-            stdout=error.stdout or "",
-            stderr=error.stderr or "Timed out while running C++ code",
-            exitCode=124,
-            timedOut=True,
-        )
-
-    return RunCodeResponse(
-        language="cpp",
-        stdout=run_process.stdout,
-        stderr=run_process.stderr,
-        exitCode=run_process.returncode,
-        timedOut=False,
-    )
-
-
 def execute_code(problem_id: ProblemId, language: CodeLanguage, code: str, stdin_text: str) -> RunCodeResponse:
-    if language == "python":
-        return execute_python_code(problem_id, code, stdin_text)
-
-    with tempfile.TemporaryDirectory() as temp_dir_name:
-        temp_dir = Path(temp_dir_name)
-        binary_file, compile_result = compile_cpp_code(problem_id, temp_dir, code)
-        if compile_result is not None:
-            return compile_result
-
-        return execute_cpp_binary(binary_file, stdin_text)
+    return execute_python_code(problem_id, code, stdin_text)
 
 
 @app.post("/api/session/start", response_model=SessionStartResponse, status_code=201)
@@ -488,68 +312,6 @@ def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
     tests = SUBMISSION_TESTS.get(payload.problemId, [])
     total_tests = len(tests)
     results: list[SubmitTestResult] = []
-
-    if payload.language == "cpp":
-        with tempfile.TemporaryDirectory() as temp_dir_name:
-            temp_dir = Path(temp_dir_name)
-            binary_file, compile_result = compile_cpp_code(payload.problemId, temp_dir, payload.code)
-
-            if compile_result is not None:
-                return SubmitCodeResponse(
-                    problemId=payload.problemId,
-                    language=payload.language,
-                    passed=False,
-                    passedTests=0,
-                    totalTests=total_tests,
-                    note="Compilation failed",
-                    results=[
-                        SubmitTestResult(
-                            input="",
-                            expectedOutput="",
-                            actualOutput=compile_result.stdout,
-                            passed=False,
-                            exitCode=compile_result.exitCode,
-                            timedOut=compile_result.timedOut,
-                            stderr=compile_result.stderr,
-                            reason="Compilation failed",
-                        )
-                    ],
-                )
-
-            passed_tests = 0
-            for test_input, expected_output in tests:
-                execution_result = execute_cpp_binary(binary_file, test_input)
-                actual_output = execution_result.stdout
-                passed = (
-                    not execution_result.timedOut
-                    and execution_result.exitCode == 0
-                    and normalize_output(actual_output) == normalize_output(expected_output)
-                )
-                if passed:
-                    passed_tests += 1
-
-                results.append(
-                    SubmitTestResult(
-                        input=test_input,
-                        expectedOutput=expected_output,
-                        actualOutput=actual_output,
-                        passed=passed,
-                        exitCode=execution_result.exitCode,
-                        timedOut=execution_result.timedOut,
-                        stderr=execution_result.stderr,
-                        reason=None if passed else "Output mismatch" if not execution_result.stderr else "Runtime error",
-                    )
-                )
-
-            return SubmitCodeResponse(
-                problemId=payload.problemId,
-                language=payload.language,
-                passed=passed_tests == total_tests,
-                passedTests=passed_tests,
-                totalTests=total_tests,
-                note=None if passed_tests == total_tests else "One or more sample tests failed",
-                results=results,
-            )
 
     passed_tests = 0
     for test_input, expected_output in tests:

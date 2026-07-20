@@ -23,7 +23,7 @@ export default function CodeEditorPanel({
       <div className="editorToolbar">
         <div>
           <p className="editorLabel">Code editor</p>
-          <p className="editorHint">Write your solution in {language === "cpp" ? "C++" : "Python"}.</p>
+          <p className="editorHint">Write your solution in Python.</p>
         </div>
 
         <div className="editorControls">
@@ -31,7 +31,6 @@ export default function CodeEditorPanel({
             Language
           </label>
           <select id="language" value={language} onChange={(event) => onLanguageChange(event.target.value as CodeLanguage)}>
-            <option value="cpp">C++</option>
             <option value="python">Python</option>
           </select>
           <button type="button" className="ghost editorReset" onClick={onReset}>
