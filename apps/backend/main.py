@@ -1,8 +1,190 @@
 from datetime import datetime, timezone
+from uuid import uuid4
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from .ai_services import call_elevenlabs_tts, call_openai_tutor, transcribe_audio_with_openai
+from .execution import evaluate_submission, execute_code
+from .models import (
+    DEFAULT_PROBLEM_ID,
+    HelpCodeRequest,
+    HelpCodeResponse,
+    LastProblemResponse,
+    LastProblemUpdateRequest,
+    RunCodeRequest,
+    RunCodeResponse,
+    SessionStartRequest,
+    SessionStartResponse,
+    SignInRequest,
+    SignInResponse,
+    SubmitCodeRequest,
+    SubmitCodeResponse,
+    TranscribeAudioRequest,
+    TranscribeAudioResponse,
+)
+from .problem_data import SUBMISSION_TESTS
+
+load_dotenv()
+
+user_last_problem: dict[str, str] = {}
+token_to_email: dict[str, str] = {}
+
+app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/health")
+def health() -> dict[str, object]:
+    return {"ok": True, "service": "voice-ai-dsa-mentor-api"}
+
+
+def require_authenticated_email(authorization: str | None) -> str:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization token")
+
+    token = authorization[7:].strip()
+    email = token_to_email.get(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    return email
+
+
+@app.post("/api/session/start", response_model=SessionStartResponse, status_code=201)
+def start_session(payload: SessionStartRequest) -> SessionStartResponse:
+    return SessionStartResponse(
+        sessionId=str(uuid4()),
+        startedAt=datetime.now(timezone.utc).isoformat(),
+        mode=payload.mode,
+        topic=payload.topic,
+    )
+
+
+@app.post("/api/auth/signin", response_model=SignInResponse, status_code=200)
+def sign_in(payload: SignInRequest) -> SignInResponse:
+    email = payload.email.strip().lower()
+    if "@" not in email:
+        raise HTTPException(status_code=422, detail="Please provide a valid email address")
+
+    if email not in user_last_problem:
+        user_last_problem[email] = DEFAULT_PROBLEM_ID
+
+    token = str(uuid4())
+    token_to_email[token] = email
+
+    return SignInResponse(token=token, email=email, lastProblemId=user_last_problem[email])
+
+
+@app.get("/api/users/me/last-problem", response_model=LastProblemResponse, status_code=200)
+def get_last_problem(authorization: str | None = Header(default=None)) -> LastProblemResponse:
+    email = require_authenticated_email(authorization)
+    return LastProblemResponse(email=email, lastProblemId=user_last_problem.get(email, DEFAULT_PROBLEM_ID))
+
+
+@app.patch("/api/users/me/last-problem", response_model=LastProblemResponse, status_code=200)
+def update_last_problem(
+    payload: LastProblemUpdateRequest,
+    authorization: str | None = Header(default=None),
+) -> LastProblemResponse:
+    email = require_authenticated_email(authorization)
+    user_last_problem[email] = payload.problemId
+    return LastProblemResponse(email=email, lastProblemId=user_last_problem[email])
+
+
+@app.post("/api/code/run", response_model=RunCodeResponse, status_code=200)
+def run_code(payload: RunCodeRequest) -> RunCodeResponse:
+    tests = SUBMISSION_TESTS.get(payload.problemId, [])
+    if not tests:
+        raise HTTPException(status_code=422, detail="No tests found for this problem")
+
+    stdin_text, _ = tests[0]
+    return execute_code(payload.problemId, payload.language, payload.code, stdin_text)
+
+
+@app.post("/api/code/submit", response_model=SubmitCodeResponse, status_code=200)
+def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
+    tests = SUBMISSION_TESTS.get(payload.problemId, [])
+    if not tests:
+        raise HTTPException(status_code=422, detail="No tests found for this problem")
+
+    results, passed_tests, total_tests = evaluate_submission(payload.problemId, payload.code)
+
+    return SubmitCodeResponse(
+        problemId=payload.problemId,
+        language=payload.language,
+        passed=passed_tests == total_tests,
+        passedTests=passed_tests,
+        totalTests=total_tests,
+        note=None if passed_tests == total_tests else "One or more sample tests failed",
+        results=results,
+    )
+
+
+@app.post("/api/help", response_model=HelpCodeResponse, status_code=200)
+def help_code(payload: HelpCodeRequest) -> HelpCodeResponse:
+    answer = call_openai_tutor(payload.problemId, payload.question, payload.code, payload.mode)
+    audio_base64, audio_mime_type, voice_used = call_elevenlabs_tts(answer)
+
+    return HelpCodeResponse(
+        problemId=payload.problemId,
+        answer=answer,
+        audioBase64=audio_base64,
+        audioMimeType=audio_mime_type,
+        voiceUsed=voice_used,
+    )
+
+
+@app.post("/api/help/transcribe", response_model=TranscribeAudioResponse, status_code=200)
+def transcribe_audio(payload: TranscribeAudioRequest) -> TranscribeAudioResponse:
+    text = transcribe_audio_with_openai(payload.audioBase64, payload.mimeType)
+    return TranscribeAudioResponse(text=text)
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from .ai_services import call_elevenlabs_tts, call_openai_tutor, transcribe_audio_with_openai
+from .execution import evaluate_submission, execute_code
+from .models import (
+    DEFAULT_PROBLEM_ID,
+    HelpCodeRequest,
+    HelpCodeResponse,
+    LastProblemResponse,
+    LastProblemUpdateRequest,
+    RunCodeRequest,
+    RunCodeResponse,
+)
+
+load_dotenv()
+
+app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/health")
+def health() -> dict[str, object]:
+    return {"ok": True, "service": "voice-ai-dsa-mentor-api"}
+from datetime import datetime, timezone
 import base64
 import json
 import os
-import uuid
 import subprocess
 import sys
 import tempfile
@@ -30,6 +212,23 @@ ProblemId = Literal[
     "merge-k-sorted-lists",
 ]
 DEFAULT_PROBLEM_ID: ProblemId = "two-sum"
+
+OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions"
+ELEVENLABS_TTS_URL_TEMPLATE = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+
+SYSTEM_TUTOR_PROMPT = (
+    "You are a concise DSA tutor. Help the learner solve the problem without giving away the full solution. "
+    "Focus on debugging hints, algorithm direction, and why their current code may fail. "
+    "Keep the answer under 180 words and avoid code unless it is a tiny illustrative snippet."
+)
+
+PROBLEM_SUMMARIES: dict[ProblemId, str] = {
+    "two-sum": "Find two indices whose values add up to a target in linear time.",
+    "valid-parentheses": "Validate bracket order using stack pushes and pops.",
+    "longest-substring-no-repeat": "Use a sliding window to find the longest substring with unique characters.",
+    "merge-k-sorted-lists": "Merge multiple sorted linked lists efficiently.",
+}
 
 # In-memory storage for starter auth/progress flow.
 user_last_problem: dict[str, ProblemId] = {}
@@ -187,13 +386,15 @@ def normalize_output(value: str) -> str:
 
 
 def get_problem_summary(problem_id: ProblemId) -> str:
-    if problem_id == "two-sum":
-        return "Find two indices whose values add up to a target in linear time."
-    if problem_id == "valid-parentheses":
-        return "Validate bracket order using stack pushes and pops."
-    if problem_id == "longest-substring-no-repeat":
-        return "Use a sliding window to find the longest substring with unique characters."
-    return "Merge multiple sorted linked lists efficiently."
+    return PROBLEM_SUMMARIES[problem_id]
+
+
+def build_request(url: str, body: bytes | None, headers: dict[str, str], method: str = "POST") -> urllib_request.Request:
+    return urllib_request.Request(url, data=body, headers=headers, method=method)
+
+
+def read_json_response(response: object) -> dict[str, object]:
+    return json.loads(response.read().decode("utf-8"))
 
 
 def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mode: MentorMode) -> str:
@@ -202,12 +403,6 @@ def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mode: Men
 
     if not api_key:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
-
-    system_prompt = (
-        "You are a concise DSA tutor. Help the learner solve the problem without giving away the full solution. "
-        "Focus on debugging hints, algorithm direction, and why their current code may fail. "
-        "Keep the answer under 180 words and avoid code unless it is a tiny illustrative snippet."
-    )
     user_prompt = (
         f"Problem: {problem_id}\n"
         f"Summary: {get_problem_summary(problem_id)}\n"
@@ -219,25 +414,24 @@ def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mode: Men
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": SYSTEM_TUTOR_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
         "temperature": 0.3,
     }
 
-    request = urllib_request.Request(
-        "https://api.openai.com/v1/chat/completions",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
+    request = build_request(
+        OPENAI_CHAT_COMPLETIONS_URL,
+        json.dumps(payload).encode("utf-8"),
+        {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
-        method="POST",
     )
 
     try:
         with urllib_request.urlopen(request, timeout=30) as response:
-            response_payload = json.loads(response.read().decode("utf-8"))
+            response_payload = read_json_response(response)
     except urllib_error.HTTPError as exc:
         raise HTTPException(status_code=500, detail=f"OpenAI request failed: {exc.read().decode('utf-8', errors='ignore')}") from exc
     except urllib_error.URLError as exc:
@@ -268,15 +462,14 @@ def call_elevenlabs_tts(answer: str) -> tuple[str | None, str | None, str | None
         },
     }
 
-    request = urllib_request.Request(
-        f"https://api.elevenlabs.io/v1/text-to-speech/{quote(voice_id)}",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
+    request = build_request(
+        ELEVENLABS_TTS_URL_TEMPLATE.format(voice_id=quote(voice_id)),
+        json.dumps(payload).encode("utf-8"),
+        {
             "xi-api-key": api_key,
             "Content-Type": "application/json",
             "Accept": "audio/mpeg",
         },
-        method="POST",
     )
 
     try:
@@ -298,7 +491,7 @@ def transcribe_audio_with_openai(audio_base64: str, mime_type: str) -> str:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
 
     audio_bytes = base64.b64decode(audio_base64)
-    boundary = f"----voice-ai-boundary-{uuid.uuid4().hex}"
+    boundary = f"----voice-ai-boundary-{uuid4().hex}"
     filename = "voice-recording.webm"
     if "mp4" in mime_type:
         filename = "voice-recording.mp4"
@@ -318,19 +511,18 @@ def transcribe_audio_with_openai(audio_base64: str, mime_type: str) -> str:
         ]
     )
 
-    request = urllib_request.Request(
-        "https://api.openai.com/v1/audio/transcriptions",
-        data=body,
-        headers={
+    request = build_request(
+        OPENAI_TRANSCRIPTIONS_URL,
+        body,
+        {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": f"multipart/form-data; boundary={boundary}",
         },
-        method="POST",
     )
 
     try:
         with urllib_request.urlopen(request, timeout=60) as response:
-            response_payload = json.loads(response.read().decode("utf-8"))
+            response_payload = read_json_response(response)
     except urllib_error.HTTPError as exc:
         raise HTTPException(status_code=500, detail=f"OpenAI transcription failed: {exc.read().decode('utf-8', errors='ignore')}") from exc
     except urllib_error.URLError as exc:
@@ -460,6 +652,38 @@ def execute_code(problem_id: ProblemId, language: CodeLanguage, code: str, stdin
     return execute_python_code(problem_id, code, stdin_text)
 
 
+def evaluate_submission(problem_id: ProblemId, code: str) -> tuple[list[SubmitTestResult], int, int]:
+    tests = SUBMISSION_TESTS.get(problem_id, [])
+    results: list[SubmitTestResult] = []
+    passed_tests = 0
+
+    for test_input, expected_output in tests:
+        execution_result = execute_python_code(problem_id, code, test_input)
+        actual_output = execution_result.stdout
+        passed = (
+            not execution_result.timedOut
+            and execution_result.exitCode == 0
+            and normalize_output(actual_output) == normalize_output(expected_output)
+        )
+        if passed:
+            passed_tests += 1
+
+        results.append(
+            SubmitTestResult(
+                input=test_input,
+                expectedOutput=expected_output,
+                actualOutput=actual_output,
+                passed=passed,
+                exitCode=execution_result.exitCode,
+                timedOut=execution_result.timedOut,
+                stderr=execution_result.stderr,
+                reason=None if passed else "Output mismatch" if not execution_result.stderr else "Runtime error",
+            )
+        )
+
+    return results, passed_tests, len(tests)
+
+
 @app.post("/api/session/start", response_model=SessionStartResponse, status_code=201)
 def start_session(payload: SessionStartRequest) -> SessionStartResponse:
     return SessionStartResponse(
@@ -514,34 +738,7 @@ def run_code(payload: RunCodeRequest) -> RunCodeResponse:
 
 @app.post("/api/code/submit", response_model=SubmitCodeResponse, status_code=200)
 def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
-    tests = SUBMISSION_TESTS.get(payload.problemId, [])
-    total_tests = len(tests)
-    results: list[SubmitTestResult] = []
-
-    passed_tests = 0
-    for test_input, expected_output in tests:
-        execution_result = execute_python_code(payload.problemId, payload.code, test_input)
-        actual_output = execution_result.stdout
-        passed = (
-            not execution_result.timedOut
-            and execution_result.exitCode == 0
-            and normalize_output(actual_output) == normalize_output(expected_output)
-        )
-        if passed:
-            passed_tests += 1
-
-        results.append(
-            SubmitTestResult(
-                input=test_input,
-                expectedOutput=expected_output,
-                actualOutput=actual_output,
-                passed=passed,
-                exitCode=execution_result.exitCode,
-                timedOut=execution_result.timedOut,
-                stderr=execution_result.stderr,
-                reason=None if passed else "Output mismatch" if not execution_result.stderr else "Runtime error",
-            )
-        )
+    results, passed_tests, total_tests = evaluate_submission(payload.problemId, payload.code)
 
     return SubmitCodeResponse(
         problemId=payload.problemId,
