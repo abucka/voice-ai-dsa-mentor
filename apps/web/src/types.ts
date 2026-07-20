@@ -41,3 +41,8 @@ export type SubmitCodeResponse = {
   note: string | null;
   results: SubmitTestResult[];
 };
+
+export type HelpTutorResponse = {
+  problemId: DsaProblem["id"];
+  answer: string;
+};

@@ -3,6 +3,7 @@ import CodeEditorPanel from "./CodeEditorPanel";
 import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
 import { DsaProblem, MentorMode } from "../types";
 import { runCode } from "../services/codeRunner";
+import { askTutor } from "../services/helpTutor";
 import { submitCode } from "../services/codeSubmitter";
 
 type ProblemWorkspaceProps = {
@@ -31,6 +32,10 @@ export default function ProblemWorkspace({
   const [code, setCode] = useState<string>(() => getSolveTemplate(currentProblem.id));
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [helpQuestion, setHelpQuestion] = useState("");
+  const [helpAnswer, setHelpAnswer] = useState("");
+  const [helpStatus, setHelpStatus] = useState("");
+  const [isAskingHelp, setIsAskingHelp] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,6 +44,14 @@ export default function ProblemWorkspace({
 
   useEffect(() => {
     setCode(getSolveTemplate(currentProblem.id));
+    setRunOutput("");
+    setIsRunning(false);
+    setHelpQuestion("");
+    setHelpAnswer("");
+    setHelpStatus("");
+    setIsAskingHelp(false);
+    setSubmitOutput("");
+    setIsSubmitting(false);
   }, [currentProblem.id]);
 
   function handleReset() {
@@ -75,6 +88,32 @@ export default function ProblemWorkspace({
       setRunOutput(error instanceof Error ? error.message : "Unable to run code.");
     } finally {
       setIsRunning(false);
+    }
+  }
+
+  async function handleAskTutor() {
+    const trimmedQuestion = helpQuestion.trim();
+    if (!trimmedQuestion) {
+      setHelpStatus("Please type a question for the tutor.");
+      return;
+    }
+
+    setIsAskingHelp(true);
+    setHelpStatus("Asking the tutor...");
+    setHelpAnswer("");
+
+    try {
+      const result = await askTutor(currentProblem.id, language, code, trimmedQuestion, mode);
+      setHelpAnswer(result.answer);
+      //setHelpStatus(result.voiceUsed ? `Answered with ElevenLabs voice ${result.voiceUsed}.` : "Answered as text only.");
+
+      if (result.answer) {
+        setHelpStatus(result.answer);
+      }
+    } catch (error) {
+      setHelpStatus(error instanceof Error ? error.message : "Unable to get tutor help.");
+    } finally {
+      setIsAskingHelp(false);
     }
   }
 
@@ -144,6 +183,27 @@ export default function ProblemWorkspace({
         <section className="outputPanel" aria-live="polite">
           <p className="editorLabel">Output</p>
           <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
+        </section>
+
+        <section className="helpPanel">
+          <div className="helpHeaderRow">
+            <p className="editorLabel">Ask AI Tutor</p>
+            <button type="button" className="ghost helpButton" onClick={handleAskTutor} disabled={isAskingHelp}>
+              {isAskingHelp ? "Asking..." : "Help"}
+            </button>
+          </div>
+          <label htmlFor="helpQuestion" className="srOnly">
+            Ask the AI tutor for help
+          </label>
+          <textarea
+            id="helpQuestion"
+            className="helpTextarea"
+            value={helpQuestion}
+            onChange={(event) => setHelpQuestion(event.target.value)}
+            placeholder="What part are you stuck on?"
+            rows={3}
+          />
+          <p className="statusRow">{helpStatus || "Ask a question and the tutor will reply here."}</p>
         </section>
 
         <div className="actions">

@@ -1,18 +1,27 @@
 from datetime import datetime, timezone
+import base64
+import json
+import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import Literal
 from uuid import uuid4
+from urllib import error as urllib_error
+from urllib import request as urllib_request
+from urllib.parse import quote
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+load_dotenv()
 
 MentorMode = Literal["explain", "interview", "hints-only"]
 CodeLanguage = Literal["python"]
+HelpTone = Literal["hint", "explain", "encourage"]
 ProblemId = Literal[
     "two-sum",
     "valid-parentheses",
@@ -99,6 +108,22 @@ class SubmitCodeResponse(BaseModel):
     results: list[SubmitTestResult]
 
 
+class HelpRequest(BaseModel):
+    problemId: ProblemId
+    language: CodeLanguage
+    question: str = Field(min_length=3)
+    code: str = Field(min_length=1)
+    mode: MentorMode
+
+
+class HelpResponse(BaseModel):
+    problemId: ProblemId
+    answer: str
+    audioBase64: str | None = None
+    audioMimeType: str | None = None
+    voiceUsed: str | None = None
+
+
 app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
 
 app.add_middleware(
@@ -149,6 +174,123 @@ SUBMISSION_TESTS: dict[ProblemId, list[tuple[str, str]]] = {
 
 def normalize_output(value: str) -> str:
     return value.strip()
+
+
+def get_problem_summary(problem_id: ProblemId) -> str:
+    if problem_id == "two-sum":
+        return "Find two indices whose values add up to a target in linear time."
+    if problem_id == "valid-parentheses":
+        return "Validate bracket order using stack pushes and pops."
+    if problem_id == "longest-substring-no-repeat":
+        return "Use a sliding window to find the longest substring with unique characters."
+    return "Merge multiple sorted linked lists efficiently."
+
+
+def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mode: MentorMode) -> str:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    model = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
+
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+
+    system_prompt = (
+        "You are a concise DSA tutor. Help the learner solve the problem without giving away the full solution. "
+        "Focus on debugging hints, algorithm direction, and why their current code may fail. "
+        "Keep the answer under 180 words and avoid code unless it is a tiny illustrative snippet."
+    )
+    user_prompt = (
+        f"Problem: {problem_id}\n"
+        f"Summary: {get_problem_summary(problem_id)}\n"
+        f"Mentor mode: {mode}\n"
+        f"Learner question: {question}\n"
+        f"Current code:\n{code}\n"
+    )
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "temperature": 0.3,
+    }
+
+    request = urllib_request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib_request.urlopen(request, timeout=30) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except urllib_error.HTTPError as exc:
+        raise HTTPException(status_code=500, detail=f"OpenAI request failed: {exc.read().decode('utf-8', errors='ignore')}") from exc
+    except urllib_error.URLError as exc:
+        raise HTTPException(status_code=500, detail=f"OpenAI request failed: {exc.reason}") from exc
+
+    choices = response_payload.get("choices", [])
+    if not choices:
+        raise HTTPException(status_code=500, detail="OpenAI returned no tutor answer")
+
+    return choices[0]["message"]["content"].strip()
+
+
+def call_elevenlabs_tts(answer: str) -> tuple[str | None, str | None, str | None]:
+    api_key = os.environ.get("ELEVENLABS_API_KEY")
+    voice_id = os.environ.get("ELEVENLABS_VOICE_ID")
+
+    if not api_key or not voice_id:
+        return None, None, None
+
+    payload = {
+        "text": answer,
+        "model_id": os.environ.get("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2"),
+        "voice_settings": {
+            "stability": 0.35,
+            "similarity_boost": 0.75,
+            "style": 0.2,
+            "use_speaker_boost": True,
+        },
+    }
+
+    request = urllib_request.Request(
+        f"https://api.elevenlabs.io/v1/text-to-speech/{quote(voice_id)}",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "xi-api-key": api_key,
+            "Content-Type": "application/json",
+            "Accept": "audio/mpeg",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib_request.urlopen(request, timeout=30) as response:
+            audio_bytes = response.read()
+    except urllib_error.HTTPError as exc:
+        raise HTTPException(status_code=500, detail=f"ElevenLabs request failed: {exc.read().decode('utf-8', errors='ignore')}") from exc
+    except urllib_error.URLError as exc:
+        raise HTTPException(status_code=500, detail=f"ElevenLabs request failed: {exc.reason}") from exc
+
+    return base64.b64encode(audio_bytes).decode("utf-8"), "audio/mpeg", voice_id
+
+
+class HelpCodeRequest(BaseModel):
+    problemId: ProblemId
+    language: CodeLanguage
+    code: str = Field(min_length=1)
+    question: str = Field(min_length=3)
+    mode: MentorMode
+
+
+class HelpCodeResponse(BaseModel):
+    problemId: ProblemId
+    answer: str
 
 
 def build_python_harness(problem_id: ProblemId) -> str:
@@ -346,4 +488,15 @@ def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
         totalTests=total_tests,
         note=None if passed_tests == total_tests else "One or more sample tests failed",
         results=results,
+    )
+
+
+@app.post("/api/help", response_model=HelpCodeResponse, status_code=200)
+def help_code(payload: HelpCodeRequest) -> HelpCodeResponse:
+    answer = call_openai_tutor(payload.problemId, payload.question, payload.code, payload.mode)
+    #audio_base64, audio_mime_type, voice_used = call_elevenlabs_tts(answer)
+
+    return HelpCodeResponse(
+        problemId=payload.problemId,
+        answer=answer,
     )
