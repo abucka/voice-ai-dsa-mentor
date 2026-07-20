@@ -1,4 +1,4 @@
-import { CodeLanguage } from "../types";
+import { CodeLanguage, DsaProblem } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
@@ -10,11 +10,15 @@ export type RunCodeResponse = {
   timedOut: boolean;
 };
 
-export async function runCode(language: CodeLanguage, code: string): Promise<RunCodeResponse> {
+export async function runCode(
+  problemId: DsaProblem["id"],
+  language: CodeLanguage,
+  code: string
+): Promise<RunCodeResponse> {
   const response = await fetch(`${API_BASE_URL}/api/code/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ language, code })
+    body: JSON.stringify({ problemId, language, code })
   });
 
   if (!response.ok) {

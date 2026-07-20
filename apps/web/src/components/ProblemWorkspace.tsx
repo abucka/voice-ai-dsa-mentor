@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CodeEditorPanel from "./CodeEditorPanel";
-import { CODE_LANGUAGES } from "../constants/codeTemplates";
+import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
 import { DsaProblem, CodeLanguage, MentorMode } from "../types";
 import { runCode } from "../services/codeRunner";
 import { submitCode } from "../services/codeSubmitter";
@@ -28,11 +28,17 @@ export default function ProblemWorkspace({
   onNextProblem,
   onSignOut
 }: ProblemWorkspaceProps) {
+  function buildTemplates(problemId: DsaProblem["id"]): Record<CodeLanguage, string> {
+    return {
+      cpp: getSolveTemplate("cpp", problemId),
+      python: getSolveTemplate("python", problemId)
+    };
+  }
+
   const [language, setLanguage] = useState<CodeLanguage>("cpp");
-  const [codeByLanguage, setCodeByLanguage] = useState<Record<CodeLanguage, string>>({
-    cpp: "",
-    python: ""
-  });
+  const [codeByLanguage, setCodeByLanguage] = useState<Record<CodeLanguage, string>>(() =>
+    buildTemplates(currentProblem.id)
+  );
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
@@ -41,18 +47,22 @@ export default function ProblemWorkspace({
   const code = codeByLanguage[language];
   const filename = useMemo(() => CODE_LANGUAGES.find((entry) => entry.id === language)?.filename ?? "main.cpp", [language]);
 
+  useEffect(() => {
+    setCodeByLanguage(buildTemplates(currentProblem.id));
+  }, [currentProblem.id]);
+
   function handleLanguageChange(nextLanguage: CodeLanguage) {
     setLanguage(nextLanguage);
     setCodeByLanguage((current) => ({
       ...current,
-      [nextLanguage]: current[nextLanguage] || ""
+      [nextLanguage]: current[nextLanguage] || getSolveTemplate(nextLanguage, currentProblem.id)
     }));
   }
 
   function handleReset() {
     setCodeByLanguage((current) => ({
       ...current,
-      [language]: ""
+      [language]: getSolveTemplate(language, currentProblem.id)
     }));
   }
 
@@ -68,7 +78,7 @@ export default function ProblemWorkspace({
     setRunOutput("");
 
     try {
-      const result = await runCode(language, code);
+      const result = await runCode(currentProblem.id, language, code);
       const outputText = [
         `Exit code: ${result.exitCode}`,
         result.timedOut ? "Timed out: yes" : "Timed out: no",

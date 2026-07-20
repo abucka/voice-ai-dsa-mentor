@@ -31,6 +31,7 @@ export default function CodeEditorPanel({
             Language
           </label>
           <select id="language" value={language} onChange={(event) => onLanguageChange(event.target.value as CodeLanguage)}>
+            <option value="cpp">C++</option>
             <option value="python">Python</option>
           </select>
           <button type="button" className="ghost editorReset" onClick={onReset}>

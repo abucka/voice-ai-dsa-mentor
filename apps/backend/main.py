@@ -60,6 +60,7 @@ class LastProblemUpdateRequest(BaseModel):
 
 
 class RunCodeRequest(BaseModel):
+    problemId: ProblemId
     language: CodeLanguage
     code: str = Field(min_length=1)
 
@@ -151,13 +152,159 @@ def normalize_output(value: str) -> str:
     return value.strip()
 
 
-def execute_python_code(code: str, stdin_text: str) -> RunCodeResponse:
+def build_python_harness(problem_id: ProblemId) -> str:
+    if problem_id == "two-sum":
+        return """
+import sys
+
+if "solve" not in globals():
+    raise NameError("Missing required function: solve")
+
+parts = sys.stdin.readline().strip().split()
+n = int(parts[0])
+target = int(parts[1])
+nums = list(map(int, sys.stdin.readline().strip().split()))[:n]
+result = solve(nums, target)
+
+if isinstance(result, (list, tuple)):
+    print(" ".join(str(x) for x in result))
+else:
+    print(result)
+"""
+
+    if problem_id == "valid-parentheses":
+        return """
+import sys
+
+if "solve" not in globals():
+    raise NameError("Missing required function: solve")
+
+s = sys.stdin.readline().rstrip("\n")
+result = solve(s)
+print("true" if bool(result) else "false")
+"""
+
+    if problem_id == "longest-substring-no-repeat":
+        return """
+import sys
+
+if "solve" not in globals():
+    raise NameError("Missing required function: solve")
+
+s = sys.stdin.readline().rstrip("\n")
+result = solve(s)
+print(result)
+"""
+
+    return """
+import sys
+
+if "solve" not in globals():
+    raise NameError("Missing required function: solve")
+
+k = int(sys.stdin.readline().strip())
+lists = []
+for _ in range(k):
+    line = sys.stdin.readline().strip()
+    lists.append(list(map(int, line.split())) if line else [])
+
+result = solve(lists)
+if isinstance(result, (list, tuple)):
+    print(" ".join(str(x) for x in result))
+else:
+    print(result)
+"""
+
+
+def build_cpp_harness(problem_id: ProblemId) -> str:
+    if problem_id == "two-sum":
+        return """
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, target;
+    cin >> n >> target;
+    vector<int> nums(n);
+    for (int i = 0; i < n; i++) cin >> nums[i];
+
+    auto result = solve(nums, target);
+    for (size_t i = 0; i < result.size(); i++) {
+        if (i) cout << ' ';
+        cout << result[i];
+    }
+    cout << '\\n';
+    return 0;
+}
+"""
+
+    if problem_id == "valid-parentheses":
+        return """
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string s;
+    getline(cin, s);
+    if (s.empty() && !cin.eof()) getline(cin, s);
+    cout << (solve(s) ? "true" : "false") << '\\n';
+    return 0;
+}
+"""
+
+    if problem_id == "longest-substring-no-repeat":
+        return """
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string s;
+    getline(cin, s);
+    if (s.empty() && !cin.eof()) getline(cin, s);
+    cout << solve(s) << '\\n';
+    return 0;
+}
+"""
+
+    return """
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int k;
+    cin >> k;
+    string line;
+    getline(cin, line);
+
+    vector<vector<int>> lists;
+    for (int i = 0; i < k; i++) {
+        getline(cin, line);
+        stringstream ss(line);
+        vector<int> row;
+        int value;
+        while (ss >> value) row.push_back(value);
+        lists.push_back(row);
+    }
+
+    auto result = solve(lists);
+    for (size_t i = 0; i < result.size(); i++) {
+        if (i) cout << ' ';
+        cout << result[i];
+    }
+    cout << '\\n';
+    return 0;
+}
+"""
+
+
+def execute_python_code(problem_id: ProblemId, code: str, stdin_text: str) -> RunCodeResponse:
     timeout_seconds = 5
 
     with tempfile.TemporaryDirectory() as temp_dir_name:
         temp_dir = Path(temp_dir_name)
         code_file = temp_dir / "main.py"
-        code_file.write_text(code, encoding="utf-8")
+        wrapped_code = f"{code}\n\n{build_python_harness(problem_id)}"
+        code_file.write_text(wrapped_code, encoding="utf-8")
 
         try:
             completed = subprocess.run(
@@ -186,7 +333,7 @@ def execute_python_code(code: str, stdin_text: str) -> RunCodeResponse:
         )
 
 
-def compile_cpp_code(temp_dir: Path, code: str) -> tuple[Path | None, RunCodeResponse | None]:
+def compile_cpp_code(problem_id: ProblemId, temp_dir: Path, code: str) -> tuple[Path | None, RunCodeResponse | None]:
     timeout_seconds = 5
     compiler = shutil.which("g++")
     if not compiler:
@@ -194,7 +341,17 @@ def compile_cpp_code(temp_dir: Path, code: str) -> tuple[Path | None, RunCodeRes
 
     code_file = temp_dir / "main.cpp"
     binary_file = temp_dir / "main"
-    code_file.write_text(code, encoding="utf-8")
+    wrapped_code = "\n".join(
+        [
+            "#include <bits/stdc++.h>",
+            "using namespace std;",
+            "",
+            code,
+            "",
+            build_cpp_harness(problem_id),
+        ]
+    )
+    code_file.write_text(wrapped_code, encoding="utf-8")
 
     try:
         compile_process = subprocess.run(
@@ -261,13 +418,13 @@ def execute_cpp_binary(binary_file: Path, stdin_text: str) -> RunCodeResponse:
     )
 
 
-def execute_code(language: CodeLanguage, code: str, stdin_text: str) -> RunCodeResponse:
+def execute_code(problem_id: ProblemId, language: CodeLanguage, code: str, stdin_text: str) -> RunCodeResponse:
     if language == "python":
-        return execute_python_code(code, stdin_text)
+        return execute_python_code(problem_id, code, stdin_text)
 
     with tempfile.TemporaryDirectory() as temp_dir_name:
         temp_dir = Path(temp_dir_name)
-        binary_file, compile_result = compile_cpp_code(temp_dir, code)
+        binary_file, compile_result = compile_cpp_code(problem_id, temp_dir, code)
         if compile_result is not None:
             return compile_result
 
@@ -317,7 +474,13 @@ def update_last_problem(
 
 @app.post("/api/code/run", response_model=RunCodeResponse, status_code=200)
 def run_code(payload: RunCodeRequest) -> RunCodeResponse:
-    return execute_code(payload.language, payload.code, "")
+    tests = SUBMISSION_TESTS.get(payload.problemId, [])
+    if not tests:
+        raise HTTPException(status_code=422, detail="No tests found for this problem")
+
+    # Run uses the first sample test as quick feedback.
+    stdin_text, _ = tests[0]
+    return execute_code(payload.problemId, payload.language, payload.code, stdin_text)
 
 
 @app.post("/api/code/submit", response_model=SubmitCodeResponse, status_code=200)
@@ -329,7 +492,7 @@ def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
     if payload.language == "cpp":
         with tempfile.TemporaryDirectory() as temp_dir_name:
             temp_dir = Path(temp_dir_name)
-            binary_file, compile_result = compile_cpp_code(temp_dir, payload.code)
+            binary_file, compile_result = compile_cpp_code(payload.problemId, temp_dir, payload.code)
 
             if compile_result is not None:
                 return SubmitCodeResponse(
@@ -390,7 +553,7 @@ def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
 
     passed_tests = 0
     for test_input, expected_output in tests:
-        execution_result = execute_python_code(payload.code, test_input)
+        execution_result = execute_python_code(payload.problemId, payload.code, test_input)
         actual_output = execution_result.stdout
         passed = (
             not execution_result.timedOut
