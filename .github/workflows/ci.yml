@@ -19,7 +19,7 @@ jobs:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v3
       - run: npm install
-      - run: uv pip install -r apps/backend/requirements.txt
+      - run: uv venv && uv pip install -r apps/backend/requirements.txt
       - run: npm run typecheck
       - run: npm run build
       - run: python -m compileall apps/backend
