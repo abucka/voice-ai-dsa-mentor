@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import base64
 import json
 import os
+import uuid
 import subprocess
 import sys
 import tempfile
@@ -122,6 +123,15 @@ class HelpResponse(BaseModel):
     audioBase64: str | None = None
     audioMimeType: str | None = None
     voiceUsed: str | None = None
+
+
+class TranscribeAudioRequest(BaseModel):
+    audioBase64: str = Field(min_length=1)
+    mimeType: str = Field(min_length=1)
+
+
+class TranscribeAudioResponse(BaseModel):
+    text: str
 
 
 app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
@@ -278,6 +288,59 @@ def call_elevenlabs_tts(answer: str) -> tuple[str | None, str | None, str | None
         raise HTTPException(status_code=500, detail=f"ElevenLabs request failed: {exc.reason}") from exc
 
     return base64.b64encode(audio_bytes).decode("utf-8"), "audio/mpeg", voice_id
+
+
+def transcribe_audio_with_openai(audio_base64: str, mime_type: str) -> str:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    model = os.environ.get("OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe")
+
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+
+    audio_bytes = base64.b64decode(audio_base64)
+    boundary = f"----voice-ai-boundary-{uuid.uuid4().hex}"
+    filename = "voice-recording.webm"
+    if "mp4" in mime_type:
+        filename = "voice-recording.mp4"
+    elif "ogg" in mime_type:
+        filename = "voice-recording.ogg"
+
+    body = b"".join(
+        [
+            f"--{boundary}\r\n".encode("utf-8"),
+            f'Content-Disposition: form-data; name="model"\r\n\r\n{model}\r\n'.encode("utf-8"),
+            f"--{boundary}\r\n".encode("utf-8"),
+            f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode("utf-8"),
+            f"Content-Type: {mime_type}\r\n\r\n".encode("utf-8"),
+            audio_bytes,
+            b"\r\n",
+            f"--{boundary}--\r\n".encode("utf-8"),
+        ]
+    )
+
+    request = urllib_request.Request(
+        "https://api.openai.com/v1/audio/transcriptions",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib_request.urlopen(request, timeout=60) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except urllib_error.HTTPError as exc:
+        raise HTTPException(status_code=500, detail=f"OpenAI transcription failed: {exc.read().decode('utf-8', errors='ignore')}") from exc
+    except urllib_error.URLError as exc:
+        raise HTTPException(status_code=500, detail=f"OpenAI transcription failed: {exc.reason}") from exc
+
+    text = response_payload.get("text", "").strip()
+    if not text:
+        raise HTTPException(status_code=500, detail="OpenAI returned no transcription")
+
+    return text
 
 
 class HelpCodeRequest(BaseModel):
@@ -494,9 +557,14 @@ def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
 @app.post("/api/help", response_model=HelpCodeResponse, status_code=200)
 def help_code(payload: HelpCodeRequest) -> HelpCodeResponse:
     answer = call_openai_tutor(payload.problemId, payload.question, payload.code, payload.mode)
-    #audio_base64, audio_mime_type, voice_used = call_elevenlabs_tts(answer)
 
     return HelpCodeResponse(
         problemId=payload.problemId,
         answer=answer,
     )
+
+
+@app.post("/api/help/transcribe", response_model=TranscribeAudioResponse, status_code=200)
+def transcribe_audio(payload: TranscribeAudioRequest) -> TranscribeAudioResponse:
+    text = transcribe_audio_with_openai(payload.audioBase64, payload.mimeType)
+    return TranscribeAudioResponse(text=text)

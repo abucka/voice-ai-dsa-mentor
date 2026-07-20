@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CodeEditorPanel from "./CodeEditorPanel";
 import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
 import { DsaProblem, MentorMode } from "../types";
 import { runCode } from "../services/codeRunner";
 import { askTutor } from "../services/helpTutor";
+import { transcribeVoice } from "../services/voiceTranscriber";
 import { submitCode } from "../services/codeSubmitter";
 
 type ProblemWorkspaceProps = {
@@ -36,8 +37,12 @@ export default function ProblemWorkspace({
   const [helpAnswer, setHelpAnswer] = useState("");
   const [helpStatus, setHelpStatus] = useState("");
   const [isAskingHelp, setIsAskingHelp] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
 
   const language = "python" as const;
   const filename = CODE_LANGUAGES[0]?.filename ?? "main.py";
@@ -50,8 +55,13 @@ export default function ProblemWorkspace({
     setHelpAnswer("");
     setHelpStatus("");
     setIsAskingHelp(false);
+    setIsRecordingVoice(false);
     setSubmitOutput("");
     setIsSubmitting(false);
+    mediaRecorderRef.current = null;
+    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    mediaStreamRef.current = null;
+    audioChunksRef.current = [];
   }, [currentProblem.id]);
 
   function handleReset() {
@@ -91,8 +101,8 @@ export default function ProblemWorkspace({
     }
   }
 
-  async function handleAskTutor() {
-    const trimmedQuestion = helpQuestion.trim();
+  async function handleAskTutor(questionOverride?: string) {
+    const trimmedQuestion = (questionOverride ?? helpQuestion).trim();
     if (!trimmedQuestion) {
       setHelpStatus("Please type a question for the tutor.");
       return;
@@ -105,16 +115,80 @@ export default function ProblemWorkspace({
     try {
       const result = await askTutor(currentProblem.id, language, code, trimmedQuestion, mode);
       setHelpAnswer(result.answer);
-      //setHelpStatus(result.voiceUsed ? `Answered with ElevenLabs voice ${result.voiceUsed}.` : "Answered as text only.");
-
-      if (result.answer) {
-        setHelpStatus(result.answer);
-      }
+      setHelpStatus(result.answer || "Tutor answered.");
     } catch (error) {
       setHelpStatus(error instanceof Error ? error.message : "Unable to get tutor help.");
     } finally {
       setIsAskingHelp(false);
     }
+  }
+
+  async function startVoiceHelp() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setHelpStatus("Your browser does not support microphone recording.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaStreamRef.current = stream;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        try {
+          const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+          const audioBase64 = await blobToBase64(blob);
+          setHelpStatus("Transcribing your voice question...");
+          const transcript = await transcribeVoice(audioBase64, blob.type || "audio/webm");
+          setHelpQuestion(transcript);
+          await handleAskTutor(transcript);
+        } catch (error) {
+          setHelpStatus(error instanceof Error ? error.message : "Unable to transcribe your voice question.");
+        } finally {
+          setIsRecordingVoice(false);
+          stream.getTracks().forEach((track) => track.stop());
+          mediaRecorderRef.current = null;
+          mediaStreamRef.current = null;
+          audioChunksRef.current = [];
+        }
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecordingVoice(true);
+      setHelpStatus("Recording... click stop when finished.");
+    } catch (error) {
+      setHelpStatus(error instanceof Error ? error.message : "Unable to access the microphone.");
+    }
+  }
+
+  function stopVoiceHelp() {
+    mediaRecorderRef.current?.stop();
+  }
+
+  function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result;
+        if (typeof result !== "string") {
+          reject(new Error("Unable to read recorded audio."));
+          return;
+        }
+
+        const base64 = result.split(",")[1] ?? "";
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("Unable to read recorded audio."));
+      reader.readAsDataURL(blob);
+    });
   }
 
   async function handleSubmitCode() {
@@ -188,9 +262,26 @@ export default function ProblemWorkspace({
         <section className="helpPanel">
           <div className="helpHeaderRow">
             <p className="editorLabel">Ask AI Tutor</p>
-            <button type="button" className="ghost helpButton" onClick={handleAskTutor} disabled={isAskingHelp}>
-              {isAskingHelp ? "Asking..." : "Help"}
-            </button>
+            <div className="helpButtonGroup">
+              <button type="button" className="ghost helpButton" onClick={() => void handleAskTutor()} disabled={isAskingHelp || isRecordingVoice}>
+                {isAskingHelp ? "Asking..." : "Help"}
+              </button>
+              <button
+                type="button"
+                className="ghost helpButton"
+                onClick={() => {
+                  if (isRecordingVoice) {
+                    stopVoiceHelp();
+                    return;
+                  }
+
+                  void startVoiceHelp();
+                }}
+                disabled={isAskingHelp}
+              >
+                {isRecordingVoice ? "Stop Voice" : "Ask by Voice"}
+              </button>
+            </div>
           </div>
           <label htmlFor="helpQuestion" className="srOnly">
             Ask the AI tutor for help
