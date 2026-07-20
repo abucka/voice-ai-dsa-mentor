@@ -1,6 +1,8 @@
 #!/bin/sh
 
-PYTHON_BIN="$PWD/.venv/bin/python"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
 
 if [ ! -x "$PYTHON_BIN" ]; then
   PYTHON_BIN="$(command -v python3.13 || command -v python3.12 || command -v python3.11 || command -v python3)"
