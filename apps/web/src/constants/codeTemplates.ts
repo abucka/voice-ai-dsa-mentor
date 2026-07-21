@@ -32,6 +32,14 @@ export function getSolveTemplate(problemId: DsaProblem["id"]): string {
     ].join("\n");
   }
 
+  if (problemId === "duplicates") {
+    return [
+        "def solve(s):",
+        "    # Return string without duplicates.",
+        "    return s"
+    ].join("\n");
+
+  }   
   return [
     "def solve(lists):",
     "    # Return one merged sorted list.",

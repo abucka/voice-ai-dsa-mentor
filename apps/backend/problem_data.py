@@ -17,6 +17,10 @@ SUBMISSION_TESTS: dict[ProblemId, list[tuple[str, str]]] = {
         ("3\n1 4 5\n1 3 4\n2 6\n", "1 1 2 3 4 4 5 6\n"),
         ("2\n1 2\n3 4\n", "1 2 3 4\n"),
     ],
+    "duplicates": [
+        ("abcabcbb\n", "abc\n"),
+        ("bbbbb\n", "b\n"),
+    ]
 }
 
 PROBLEM_SUMMARIES: dict[ProblemId, str] = {
@@ -24,6 +28,7 @@ PROBLEM_SUMMARIES: dict[ProblemId, str] = {
     "valid-parentheses": "Validate bracket order using stack pushes and pops.",
     "longest-substring-no-repeat": "Use a sliding window to find the longest substring with unique characters.",
     "merge-k-sorted-lists": "Merge multiple sorted linked lists efficiently.",
+    "duplicates": "Remove duplicates in a string."
 }
 
 
@@ -74,6 +79,18 @@ import sys
 if "solve" not in globals():
     raise NameError("Missing required function: solve")
 
+s = sys.stdin.readline().rstrip("\n")
+result = solve(s)
+print(result)
+"""
+    if problem_id == "duplicates":
+        return """
+import sys
+
+if "solve" not in globals():
+    raise NameError("Missing required function: solve")
+print("hallo")
+print(f'{s=}')
 s = sys.stdin.readline().rstrip("\n")
 result = solve(s)
 print(result)

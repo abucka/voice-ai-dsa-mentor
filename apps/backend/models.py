@@ -9,6 +9,7 @@ ProblemId = Literal[
     "valid-parentheses",
     "longest-substring-no-repeat",
     "merge-k-sorted-lists",
+    "duplicates"
 ]
 DEFAULT_PROBLEM_ID: ProblemId = "two-sum"
 

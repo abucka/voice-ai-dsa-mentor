@@ -30,7 +30,14 @@ export const PROBLEMS: DsaProblem[] = [
     difficulty: "Hard",
     topic: "Heap, Linked List",
     summary: "Merge multiple sorted linked lists efficiently with a min heap."
-  }
+  },
+  {
+    id: "duplicates",
+    title: "Duplicates",
+    difficulty: "Medium",
+    topic: "?",
+    summary: "Remove duplicates from the string."
+  },
 ];
 
 export const STORAGE_KEY = "dsa:last-problem-id";
