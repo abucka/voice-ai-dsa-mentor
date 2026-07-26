@@ -18,7 +18,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSavingProgress, setIsSavingProgress] = useState(false);
-  const [lastProblemId, setLastProblemId] = useState<string>(getInitialProblemId);
+  const [lastProblemId, setLastProblemId] = useState<number>(getInitialProblemId);
 
   const subtitle = useMemo(() => {
     if (mode === "interview") return "Interview simulation with strict feedback";
@@ -59,7 +59,7 @@ export default function App() {
     }
   }
 
-  function saveProgressLocal(problemId: string) {
+  function saveProgressLocal(problemId: number) {
     setLastProblemId(problemId);
     saveProblemIdLocally(problemId);
   }

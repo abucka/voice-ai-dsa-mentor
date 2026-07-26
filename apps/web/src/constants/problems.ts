@@ -1,43 +1,18 @@
 import { DsaProblem, MentorMode } from "../types";
+import ProblemData from '../../../../data/data.json'
 
 export const MODES: MentorMode[] = ["explain", "interview", "hints-only"];
 
-export const PROBLEMS: DsaProblem[] = [
-  {
-    id: "two-sum",
-    title: "Two Sum",
-    difficulty: "Easy",
-    topic: "Arrays, Hash Map",
-    summary: "Find two indices whose values add up to a target in linear time."
-  },
-  {
-    id: "valid-parentheses",
-    title: "Valid Parentheses",
-    difficulty: "Easy",
-    topic: "Stack",
-    summary: "Validate bracket order using stack pushes and pops."
-  },
-  {
-    id: "longest-substring-no-repeat",
-    title: "Longest Substring Without Repeating Characters",
-    difficulty: "Medium",
-    topic: "Sliding Window",
-    summary: "Use two pointers and a seen map to maintain a valid unique window."
-  },
-  {
-    id: "merge-k-sorted-lists",
-    title: "Merge k Sorted Lists",
-    difficulty: "Hard",
-    topic: "Heap, Linked List",
-    summary: "Merge multiple sorted linked lists efficiently with a min heap."
-  },
-  {
-    id: "duplicates",
-    title: "Duplicates",
-    difficulty: "Medium",
-    topic: "?",
-    summary: "Remove duplicates from the string."
-  },
-];
+export const PROBLEMS: DsaProblem[] = ProblemData.exercises.map((item, index) => {
+  return {
+    id: index, 
+    title: item.title,
+    difficulty: item.difficulty,
+    topic: "Algorithms", 
+    summary: item.exercise,
+    template: item.template
+  };
+})
+
 
 export const STORAGE_KEY = "dsa:last-problem-id";

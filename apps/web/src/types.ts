@@ -3,11 +3,12 @@ export type Screen = "landing" | "signin" | "problem";
 export type CodeLanguage = "python";
 
 export type DsaProblem = {
-  id: string;
+  id: number;
   title: string;
-  difficulty: "Easy" | "Medium" | "Hard";
+  difficulty: string;
   topic: string;
   summary: string;
+  template: string[]
 };
 
 export type SignInResponse = {

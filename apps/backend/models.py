@@ -1,17 +1,11 @@
-from typing import Literal
+from typing import Literal, NewType
 
 from pydantic import BaseModel, Field
 
 MentorMode = Literal["explain", "interview", "hints-only"]
 CodeLanguage = Literal["python"]
-ProblemId = Literal[
-    "two-sum",
-    "valid-parentheses",
-    "longest-substring-no-repeat",
-    "merge-k-sorted-lists",
-    "duplicates"
-]
-DEFAULT_PROBLEM_ID: ProblemId = "two-sum"
+ProblemId = NewType('ProblemId', int)
+DEFAULT_PROBLEM_ID: ProblemId = 0
 
 
 class SessionStartRequest(BaseModel):
