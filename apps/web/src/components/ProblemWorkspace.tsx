@@ -10,6 +10,8 @@ import { submitCode } from "../services/codeSubmitter";
 type ProblemWorkspaceProps = {
   signedInEmail: string;
   currentProblem: DsaProblem;
+  currentProblemIndex: number;
+  totalProblems: number;
   mode: MentorMode;
   modes: MentorMode[];
   subtitle: string;
@@ -22,6 +24,8 @@ type ProblemWorkspaceProps = {
 export default function ProblemWorkspace({
   signedInEmail,
   currentProblem,
+  currentProblemIndex,
+  totalProblems,
   mode,
   modes,
   subtitle,
@@ -46,6 +50,7 @@ export default function ProblemWorkspace({
 
   const language = "python" as const;
   const filename = CODE_LANGUAGES[0]?.filename ?? "main.py";
+  const progressPercent = Math.min(100, Math.max(0, (currentProblemIndex / totalProblems) * 100));
 
   useEffect(() => {
     setCode(getSolveTemplate(currentProblem.id));
@@ -225,92 +230,141 @@ export default function ProblemWorkspace({
 
   return (
     <section className="panel workspace">
-      <div className="workspaceHeader">
-        <p className="eyebrow">Welcome back{signedInEmail ? `, ${signedInEmail}` : ""}</p>
-        <button type="button" className="ghost" onClick={onSignOut}>
-          Sign out
-        </button>
+      <div className="workspaceHeader workspaceHeaderWide">
+        <div>
+          <p className="eyebrow">Welcome back{signedInEmail ? `, ${signedInEmail}` : ""}</p>
+          <h2>Practice workspace</h2>
+        </div>
+        <div className="workspaceHeaderActions">
+          <button type="button" className="ghost" onClick={onNextProblem}>
+            Next problem
+          </button>
+          <button type="button" className="ghost" onClick={onSignOut}>
+            Sign out
+          </button>
+        </div>
       </div>
 
-      <h2>Your last DSA problem</h2>
-      <article className="problemCard">
-        <div className="problemMeta">
-          <span>{currentProblem.difficulty}</span>
-          <span>{currentProblem.topic}</span>
-        </div>
-        <h3>{currentProblem.title}</h3>
-        <p>{currentProblem.summary}</p>
-
-        <CodeEditorPanel
-          language={language}
-          filename={filename}
-          code={code}
-          onLanguageChange={handleLanguageChange}
-          onCodeChange={handleCodeChange}
-          onReset={handleReset}
-        />
-        <div className="runControls">
-          <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
-            {isRunning ? "Running..." : "Run Code"}
-          </button>
-        </div>
-        <section className="outputPanel" aria-live="polite">
-          <p className="editorLabel">Output</p>
-          <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
-        </section>
-
-        <section className="helpPanel">
-          <div className="helpHeaderRow">
-            <p className="editorLabel">Ask AI Tutor</p>
-            <div className="helpButtonGroup">
-              <button type="button" className="ghost helpButton" onClick={() => void handleAskTutor()} disabled={isAskingHelp || isRecordingVoice}>
-                {isAskingHelp ? "Asking..." : "Help"}
-              </button>
-              <button
-                type="button"
-                className="ghost helpButton"
-                onClick={() => {
-                  if (isRecordingVoice) {
-                    stopVoiceHelp();
-                    return;
-                  }
-
-                  void startVoiceHelp();
-                }}
-                disabled={isAskingHelp}
-              >
-                {isRecordingVoice ? "Stop Voice" : "Ask by Voice"}
-              </button>
+      <div className="workspaceInsights" aria-label="Current learning context">
+        <p className="workspaceMetaText">Problem {currentProblemIndex} of {totalProblems}</p>
+        <p className="workspaceMetaText">Mode: {mode}</p>
+      </div>
+      <div className="progressTrack" role="progressbar" aria-valuenow={currentProblemIndex} aria-valuemin={1} aria-valuemax={totalProblems}>
+        <span style={{ width: `${progressPercent}%` }} />
+      </div>
+      <div className="workspaceGrid">
+        <div className="workspaceMain">
+          <article className="problemCard">
+            <div className="problemMeta">
+              <span>{currentProblem.difficulty}</span>
+              <span>{currentProblem.topic}</span>
             </div>
-          </div>
-          <label htmlFor="helpQuestion" className="srOnly">
-            Ask the AI tutor for help
-          </label>
-          <textarea
-            id="helpQuestion"
-            className="helpTextarea"
-            value={helpQuestion}
-            onChange={(event) => setHelpQuestion(event.target.value)}
-            placeholder="What part are you stuck on?"
-            rows={3}
-          />
-          <p className="statusRow">{helpStatus || "Ask a question and the tutor will reply here."}</p>
-        </section>
+            <h3>{currentProblem.title}</h3>
+            <p>{currentProblem.summary}</p>
+          </article>
 
-        <div className="actions">
-          <button type="button" className="primary" onClick={handleSubmitCode} disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </button>
-          <button type="button" className="ghost" onClick={onNextProblem}>
-            Next Problem
-          </button>
+          <section className="modePickerCard" aria-label="Mentor mode selector">
+            <div>
+              <p className="editorLabel">Mentor mode</p>
+              <p className="modeCopy">{subtitle}</p>
+            </div>
+            <label htmlFor="mentorMode" className="srOnly">
+              Select mentor mode
+            </label>
+            <select
+              id="mentorMode"
+              value={mode}
+              onChange={(event) => onModeChange(event.target.value as MentorMode)}
+            >
+              {modes.map((availableMode) => (
+                <option key={availableMode} value={availableMode}>
+                  {availableMode}
+                </option>
+              ))}
+            </select>
+          </section>
+
+          <CodeEditorPanel
+            language={language}
+            filename={filename}
+            code={code}
+            onLanguageChange={handleLanguageChange}
+            onCodeChange={handleCodeChange}
+            onReset={handleReset}
+          />
+
+          <div className="runControls">
+            <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
+              {isRunning ? "Running..." : "Run Code"}
+            </button>
+          </div>
+          <section className="outputPanel" aria-live="polite">
+            <p className="editorLabel">Output</p>
+            <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
+          </section>
+
+          <div className="actions">
+            <button type="button" className="primary" onClick={handleSubmitCode} disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit"}
+            </button>
+          </div>
+          <section className="outputPanel" aria-live="polite">
+            <p className="editorLabel">Submission</p>
+            <pre className="outputBox">{submitOutput || "Submit your code to check it against sample tests."}</pre>
+          </section>
         </div>
-        <section className="outputPanel" aria-live="polite">
-          <p className="editorLabel">Submission</p>
-          <pre className="outputBox">{submitOutput || "Submit your code to check it against sample tests."}</pre>
-        </section>
-        <p className="statusRow">{isSavingProgress ? "Saving progress..." : "Progress synced"}</p>
-      </article>
+
+        <aside className="workspaceSide">
+          <section className="helpPanel helpPanelSticky">
+            <div className="helpHeaderRow">
+              <p className="editorLabel">Ask AI Tutor</p>
+              <div className="helpButtonGroup">
+                <button type="button" className="ghost helpButton" onClick={() => void handleAskTutor()} disabled={isAskingHelp || isRecordingVoice}>
+                  {isAskingHelp ? "Asking..." : "Help"}
+                </button>
+                <button
+                  type="button"
+                  className="ghost helpButton"
+                  onClick={() => {
+                    if (isRecordingVoice) {
+                      stopVoiceHelp();
+                      return;
+                    }
+
+                    void startVoiceHelp();
+                  }}
+                  disabled={isAskingHelp}
+                >
+                  {isRecordingVoice ? "Stop Voice" : "Ask by Voice"}
+                </button>
+              </div>
+            </div>
+            <label htmlFor="helpQuestion" className="srOnly">
+              Ask the AI tutor for help
+            </label>
+            <textarea
+              id="helpQuestion"
+              className="helpTextarea"
+              value={helpQuestion}
+              onChange={(event) => setHelpQuestion(event.target.value)}
+              placeholder="What part are you stuck on?"
+              rows={4}
+            />
+            <p className="statusRow">{helpStatus || "Ask a question and the tutor will reply here."}</p>
+            {helpAnswer && (
+              <div className="helpAnswerBox">
+                <p className="editorLabel">Tutor response</p>
+                <pre className="outputBox tutorAnswerBox">{helpAnswer}</pre>
+              </div>
+            )}
+          </section>
+
+          <section className="workspaceStatusCard" aria-live="polite">
+            <p className="editorLabel">Progress</p>
+            <p className="statusRow">{isSavingProgress ? "Saving progress..." : "Progress synced"}</p>
+          </section>
+        </aside>
+      </div>
 
     </section>
   );

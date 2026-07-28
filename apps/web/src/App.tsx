@@ -31,6 +31,11 @@ export default function App() {
     [lastProblemId]
   );
 
+  const currentProblemIndex = useMemo(() => {
+    const index = PROBLEMS.findIndex((problem) => problem.id === currentProblem.id);
+    return index >= 0 ? index + 1 : 1;
+  }, [currentProblem.id]);
+
   function handleStartLearning() {
     setScreen(REQUIRE_SIGNIN_PARAM ? "signin" : "problem");
     setError("");
@@ -107,6 +112,8 @@ export default function App() {
         <ProblemWorkspace
           signedInEmail={signedInEmail}
           currentProblem={currentProblem}
+          currentProblemIndex={currentProblemIndex}
+          totalProblems={PROBLEMS.length}
           mode={mode}
           modes={MODES}
           subtitle={subtitle}

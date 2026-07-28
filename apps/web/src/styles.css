@@ -1,14 +1,16 @@
 :root {
   color-scheme: light;
   font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
-  --bg: radial-gradient(circle at 8% 12%, #fff3cb 0%, #ffe7b7 18%, #d7f1ff 42%, #c9ffe6 100%);
-  --panel: rgba(255, 255, 255, 0.76);
+  --bg: radial-gradient(circle at 8% 12%, #ffecc2 0%, #ffd8ae 24%, #d5efff 52%, #c5ffea 100%);
+  --panel: rgba(255, 255, 255, 0.8);
   --text: #132238;
   --subtle: #43506a;
-  --primary: #0054d1;
-  --primary-hover: #0046af;
+  --primary: #0f62fe;
+  --primary-hover: #0353e9;
+  --accent: #ff7a18;
   --line: rgba(19, 34, 56, 0.2);
   --shadow: 0 20px 50px rgba(0, 34, 88, 0.16);
+  --glow: 0 14px 30px rgba(15, 98, 254, 0.22);
 }
 
 * {
@@ -23,21 +25,52 @@ body {
 }
 
 .page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 1.25rem 1rem;
+  overflow: hidden;
+}
+
+.page::before,
+.page::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(6px);
+  opacity: 0.55;
+}
+
+.page::before {
+  width: 260px;
+  height: 260px;
+  top: 7%;
+  left: -90px;
+  background: radial-gradient(circle, rgba(255, 122, 24, 0.35) 0%, rgba(255, 122, 24, 0) 72%);
+}
+
+.page::after {
+  width: 320px;
+  height: 320px;
+  right: -100px;
+  bottom: 4%;
+  background: radial-gradient(circle, rgba(15, 98, 254, 0.3) 0%, rgba(15, 98, 254, 0) 72%);
 }
 
 .panel {
+  position: relative;
+  z-index: 1;
   width: min(760px, 100%);
   border: 1px solid var(--line);
   border-radius: 24px;
   padding: clamp(1.25rem, 3.2vw, 2.2rem);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
   background: var(--panel);
   box-shadow: var(--shadow);
+  animation: panelEnter 320ms ease;
 }
 
 h1 {
@@ -77,23 +110,35 @@ input,
 select {
   background: white;
   color: var(--text);
+  transition: border-color 130ms ease, box-shadow 130ms ease;
 }
 
 button {
   cursor: pointer;
+  transition: transform 130ms ease, box-shadow 130ms ease, background 130ms ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.18);
 }
 
 .primary {
   margin-top: 0.95rem;
-  background: var(--primary);
+  background: linear-gradient(128deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 84%, var(--accent) 16%) 100%);
   color: #fff;
   border: none;
   font-weight: 700;
-  transition: background 120ms ease;
+  box-shadow: var(--glow);
 }
 
 .primary:hover {
   background: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
 .primary:disabled,
@@ -104,7 +149,7 @@ button {
 
 .ghost {
   margin-top: 0.75rem;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.62);
   color: var(--text);
 }
 
@@ -125,6 +170,37 @@ button {
   text-transform: uppercase;
   color: color-mix(in srgb, var(--text) 74%, var(--primary) 26%);
   font-size: 0.8rem;
+}
+
+.heroHighlights {
+  margin: 0 0 1.15rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  text-align: left;
+}
+
+.heroHighlightCard {
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.heroHighlightLabel {
+  margin: 0;
+  font-size: 0.83rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--text) 68%, var(--primary) 32%);
+}
+
+.heroHighlightText {
+  margin: 0.45rem 0 0;
+  color: var(--subtle);
+  font-size: 0.93rem;
+  line-height: 1.35;
 }
 
 .auth p {
@@ -150,6 +226,38 @@ button {
   gap: 0.75rem;
 }
 
+.workspaceInsights {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.workspaceMetaText {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.94rem;
+  color: color-mix(in srgb, var(--text) 85%, var(--primary) 15%);
+}
+
+.progressTrack {
+  margin-top: 0.5rem;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(15, 98, 254, 0.14);
+  overflow: hidden;
+}
+
+.progressTrack span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  transition: width 220ms ease;
+}
+
 .workspaceHeader .ghost {
   margin: 0;
   width: auto;
@@ -158,10 +266,10 @@ button {
 
 .problemCard {
   margin-top: 0.95rem;
-  background: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.76);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 1rem;
+  border-radius: 18px;
+  padding: 1.1rem;
 }
 
 .problemMeta {
@@ -304,6 +412,12 @@ button {
   white-space: pre-wrap;
 }
 
+.tutorAnswerBox {
+  min-height: 140px;
+  background: #0b1c43;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .successText {
   margin: 0.6rem 0 0.15rem;
   color: #166534;
@@ -359,9 +473,28 @@ button {
   flex: 1 1 180px;
 }
 
+@keyframes panelEnter {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 @media (max-width: 640px) {
+  .heroHighlights {
+    grid-template-columns: 1fr;
+  }
+
   .workspaceHeader {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workspaceInsights {
     flex-direction: column;
   }
 
