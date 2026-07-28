@@ -73,6 +73,10 @@ body {
   animation: panelEnter 320ms ease;
 }
 
+.workspace {
+  width: min(1200px, 100%);
+}
+
 h1 {
   margin: 0;
   font-size: clamp(1.9rem, 4.8vw, 3rem);
@@ -226,6 +230,21 @@ button:focus-visible {
   gap: 0.75rem;
 }
 
+.workspaceHeaderWide {
+  align-items: flex-start;
+}
+
+.workspaceHeaderActions {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.workspaceHeaderActions .ghost {
+  margin-top: 0;
+  width: auto;
+  white-space: nowrap;
+}
+
 .workspaceInsights {
   margin-top: 0.75rem;
   display: flex;
@@ -264,12 +283,48 @@ button:focus-visible {
   padding: 0.45rem 0.65rem;
 }
 
+.workspaceGrid {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.workspaceMain,
+.workspaceSide {
+  min-width: 0;
+}
+
+.workspaceMain {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.workspaceSide {
+  display: grid;
+  gap: 0.9rem;
+}
+
 .problemCard {
-  margin-top: 0.95rem;
+  margin-top: 0;
   background: rgba(255, 255, 255, 0.76);
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 1.1rem;
+}
+
+.modePickerCard {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: rgba(255, 255, 255, 0.74);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.modePickerCard .modeCopy {
+  margin-top: 0.3rem;
 }
 
 .problemMeta {
@@ -342,7 +397,7 @@ button:focus-visible {
 .runControls {
   display: flex;
   justify-content: flex-end;
-  margin-top: 0.9rem;
+  margin-top: 0;
 }
 
 .runControls .primary {
@@ -352,7 +407,7 @@ button:focus-visible {
 }
 
 .outputPanel {
-  margin-top: 0.9rem;
+  margin-top: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 1rem;
@@ -360,11 +415,16 @@ button:focus-visible {
 }
 
 .helpPanel {
-  margin-top: 0.9rem;
+  margin-top: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.74);
+}
+
+.helpPanelSticky {
+  position: sticky;
+  top: 1rem;
 }
 
 .helpHeaderRow {
@@ -382,8 +442,8 @@ button:focus-visible {
 
 .helpButton {
   margin-top: 0;
-  width: auto;
-  min-width: 130px;
+  width: 100%;
+  min-width: 0;
 }
 
 .helpTextarea {
@@ -463,6 +523,17 @@ button:focus-visible {
   font-size: 0.92rem;
 }
 
+.workspaceStatusCard {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.95rem;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.workspaceStatusCard .statusRow {
+  margin-top: 0.45rem;
+}
+
 .actions {
   display: flex;
   gap: 0.7rem;
@@ -494,8 +565,25 @@ button:focus-visible {
     flex-direction: column;
   }
 
+  .workspaceHeaderActions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .workspaceHeaderActions .ghost {
+    width: 100%;
+  }
+
   .workspaceInsights {
     flex-direction: column;
+  }
+
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .helpPanelSticky {
+    position: static;
   }
 
   .editorToolbar,
