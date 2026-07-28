@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 from .models import CodeLanguage, ProblemId, RunCodeResponse, SubmitTestResult
-from .problem_data import SUBMISSION_TESTS, build_python_harness, normalize_output
+from .problem_data import SUBMISSION_TESTS, build_python_harness, expected_output, normalize_output, test_arguments
 
 # Untrusted user code runs as a plain subprocess, not inside a container/VM. This is NOT a
 # strong sandbox: it will not stop syscalls, filesystem access outside cwd, or slow network
@@ -30,20 +30,20 @@ def _limit_subprocess_resources() -> None:
         pass
 
 
-def execute_python_code(problem_id: ProblemId, code: str, stdin_text: str) -> RunCodeResponse:
+def execute_python_code(problem_id: ProblemId, code: str, test_row: list) -> RunCodeResponse:
     timeout_seconds = 5
 
     with tempfile.TemporaryDirectory() as temp_dir_name:
         temp_dir = Path(temp_dir_name)
         code_file = temp_dir / "main.py"
-        wrapped_code = f"{code}\n\n{build_python_harness(problem_id)}"
+        wrapped_code = f"{code}\n\n{build_python_harness(problem_id, test_row)}"
         code_file.write_text(wrapped_code, encoding="utf-8")
 
         try:
             completed = subprocess.run(
                 [sys.executable, "-I", str(code_file)],
                 cwd=temp_dir,
-                input=stdin_text,
+                input="",
                 capture_output=True,
                 text=True,
                 timeout=timeout_seconds,
@@ -68,8 +68,8 @@ def execute_python_code(problem_id: ProblemId, code: str, stdin_text: str) -> Ru
         )
 
 
-def execute_code(problem_id: ProblemId, language: CodeLanguage, code: str, stdin_text: str) -> RunCodeResponse:
-    return execute_python_code(problem_id, code, stdin_text)
+def execute_code(problem_id: ProblemId, language: CodeLanguage, code: str, test_row: list) -> RunCodeResponse:
+    return execute_python_code(problem_id, code, test_row)
 
 
 def evaluate_submission(problem_id: ProblemId, code: str) -> tuple[list[SubmitTestResult], int, int]:
@@ -77,21 +77,22 @@ def evaluate_submission(problem_id: ProblemId, code: str) -> tuple[list[SubmitTe
     results: list[SubmitTestResult] = []
     passed_tests = 0
 
-    for test_input, expected_output in tests:
-        execution_result = execute_python_code(problem_id, code, test_input)
+    for test_row in tests:
+        expected = expected_output(test_row)
+        execution_result = execute_python_code(problem_id, code, test_row)
         actual_output = execution_result.stdout
         passed = (
             not execution_result.timedOut
             and execution_result.exitCode == 0
-            and normalize_output(actual_output) == normalize_output(expected_output)
+            and normalize_output(actual_output) == normalize_output(expected)
         )
         if passed:
             passed_tests += 1
 
         results.append(
             SubmitTestResult(
-                input=test_input,
-                expectedOutput=expected_output,
+                input=", ".join(repr(arg) for arg in test_arguments(test_row)),
+                expectedOutput=expected,
                 actualOutput=actual_output,
                 passed=passed,
                 exitCode=execution_result.exitCode,

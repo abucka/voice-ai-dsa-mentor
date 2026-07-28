@@ -109,6 +109,22 @@ npm run typecheck
 npm run lint
 ```
 
+### 8. Run backend tests
+
+Install the extra dev dependencies (`pytest`, `httpx`) once, on top of the base requirements:
+
+```bash
+source .venv/bin/activate
+pip install -r apps/backend/requirements-dev.txt
+```
+
+Then run the suite from the repo root (tests run against an isolated in-memory
+SQLite database, never `data/app.db`):
+
+```bash
+python -m pytest
+```
+
 ## Suggested roadmap
 
 1. Add speech-to-text input streaming in web

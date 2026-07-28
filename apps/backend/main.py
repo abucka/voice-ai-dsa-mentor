@@ -170,8 +170,7 @@ def run_code(payload: RunCodeRequest) -> RunCodeResponse:
     if not tests:
         raise HTTPException(status_code=422, detail="No tests found for this problem")
 
-    stdin_text, _ = tests[0]
-    return execute_code(payload.problemId, payload.language, payload.code, stdin_text)
+    return execute_code(payload.problemId, payload.language, payload.code, tests[0])
 
 @app.post("/api/code/submit", response_model=SubmitCodeResponse, status_code=200)
 def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
