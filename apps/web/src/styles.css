@@ -283,25 +283,8 @@ button:focus-visible {
   padding: 0.45rem 0.65rem;
 }
 
-.workspaceGrid {
+.workspaceFlow {
   margin-top: 0.9rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.workspaceMain,
-.workspaceSide {
-  min-width: 0;
-}
-
-.workspaceMain {
-  display: grid;
-  gap: 0.9rem;
-}
-
-.workspaceSide {
   display: grid;
   gap: 0.9rem;
 }
@@ -407,11 +390,6 @@ button:focus-visible {
   border-radius: 16px;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.74);
-}
-
-.helpPanelSticky {
-  position: sticky;
-  top: 1rem;
 }
 
 .helpHeaderRow {
@@ -563,14 +541,6 @@ button:focus-visible {
 
   .workspaceInsights {
     flex-direction: column;
-  }
-
-  .workspaceGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .helpPanelSticky {
-    position: static;
   }
 
   .editorToolbar,

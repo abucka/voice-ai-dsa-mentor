@@ -244,97 +244,93 @@ export default function ProblemWorkspace({
       <div className="progressTrack" role="progressbar" aria-valuenow={currentProblemIndex} aria-valuemin={1} aria-valuemax={totalProblems}>
         <span style={{ width: `${progressPercent}%` }} />
       </div>
-      <div className="workspaceGrid">
-        <div className="workspaceMain">
-          <article className="problemCard">
-            <div className="problemMeta">
-              <span>{currentProblem.difficulty}</span>
-              <span>{currentProblem.topic}</span>
-            </div>
-            <h3>{currentProblem.title}</h3>
-            <p>{currentProblem.summary}</p>
-          </article>
-
-          <CodeEditorPanel
-            language={language}
-            filename={filename}
-            code={code}
-            onLanguageChange={handleLanguageChange}
-            onCodeChange={handleCodeChange}
-            onReset={handleReset}
-          />
-
-          <div className="runControls">
-            <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
-              {isRunning ? "Running..." : "Run Code"}
-            </button>
+      <div className="workspaceFlow">
+        <article className="problemCard">
+          <div className="problemMeta">
+            <span>{currentProblem.difficulty}</span>
+            <span>{currentProblem.topic}</span>
           </div>
-          <section className="outputPanel" aria-live="polite">
-            <p className="editorLabel">Output</p>
-            <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
-          </section>
+          <h3>{currentProblem.title}</h3>
+          <p>{currentProblem.summary}</p>
+        </article>
 
-          <div className="actions">
-            <button type="button" className="primary" onClick={handleSubmitCode} disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </button>
-          </div>
-          <section className="outputPanel" aria-live="polite">
-            <p className="editorLabel">Submission</p>
-            <pre className="outputBox">{submitOutput || "Submit your code to check it against sample tests."}</pre>
-          </section>
+        <CodeEditorPanel
+          language={language}
+          filename={filename}
+          code={code}
+          onLanguageChange={handleLanguageChange}
+          onCodeChange={handleCodeChange}
+          onReset={handleReset}
+        />
+
+        <div className="runControls">
+          <button type="button" className="primary" onClick={handleRunCode} disabled={isRunning}>
+            {isRunning ? "Running..." : "Run Code"}
+          </button>
         </div>
+        <section className="outputPanel" aria-live="polite">
+          <p className="editorLabel">Output</p>
+          <pre className="outputBox">{runOutput || "Run your code to see output here."}</pre>
+        </section>
 
-        <aside className="workspaceSide">
-          <section className="helpPanel helpPanelSticky">
-            <div className="helpHeaderRow">
-              <p className="editorLabel">Ask AI Tutor</p>
-              <div className="helpButtonGroup">
-                <button type="button" className="ghost helpButton" onClick={() => void handleAskTutor()} disabled={isAskingHelp || isRecordingVoice}>
-                  {isAskingHelp ? "Asking..." : "Help"}
-                </button>
-                <button
-                  type="button"
-                  className="ghost helpButton"
-                  onClick={() => {
-                    if (isRecordingVoice) {
-                      stopVoiceHelp();
-                      return;
-                    }
+        <section className="helpPanel">
+          <div className="helpHeaderRow">
+            <p className="editorLabel">Ask AI Tutor</p>
+            <div className="helpButtonGroup">
+              <button type="button" className="ghost helpButton" onClick={() => void handleAskTutor()} disabled={isAskingHelp || isRecordingVoice}>
+                {isAskingHelp ? "Asking..." : "Help"}
+              </button>
+              <button
+                type="button"
+                className="ghost helpButton"
+                onClick={() => {
+                  if (isRecordingVoice) {
+                    stopVoiceHelp();
+                    return;
+                  }
 
-                    void startVoiceHelp();
-                  }}
-                  disabled={isAskingHelp}
-                >
-                  {isRecordingVoice ? "Stop Voice" : "Ask by Voice"}
-                </button>
-              </div>
+                  void startVoiceHelp();
+                }}
+                disabled={isAskingHelp}
+              >
+                {isRecordingVoice ? "Stop Voice" : "Ask by Voice"}
+              </button>
             </div>
-            <label htmlFor="helpQuestion" className="srOnly">
-              Ask the AI tutor for help
-            </label>
-            <textarea
-              id="helpQuestion"
-              className="helpTextarea"
-              value={helpQuestion}
-              onChange={(event) => setHelpQuestion(event.target.value)}
-              placeholder="What part are you stuck on?"
-              rows={4}
-            />
-            <p className="statusRow">{helpStatus || "Ask a question and the tutor will reply here."}</p>
-            {helpAnswer && (
-              <div className="helpAnswerBox">
-                <p className="editorLabel">Tutor response</p>
-                <pre className="outputBox tutorAnswerBox">{helpAnswer}</pre>
-              </div>
-            )}
-          </section>
+          </div>
+          <label htmlFor="helpQuestion" className="srOnly">
+            Ask the AI tutor for help
+          </label>
+          <textarea
+            id="helpQuestion"
+            className="helpTextarea"
+            value={helpQuestion}
+            onChange={(event) => setHelpQuestion(event.target.value)}
+            placeholder="What part are you stuck on?"
+            rows={4}
+          />
+          <p className="statusRow">{helpStatus || "Ask a question and the tutor will reply here."}</p>
+          {helpAnswer && (
+            <div className="helpAnswerBox">
+              <p className="editorLabel">Tutor response</p>
+              <pre className="outputBox tutorAnswerBox">{helpAnswer}</pre>
+            </div>
+          )}
+        </section>
 
-          <section className="workspaceStatusCard" aria-live="polite">
-            <p className="editorLabel">Progress</p>
-            <p className="statusRow">{isSavingProgress ? "Saving progress..." : "Progress synced"}</p>
-          </section>
-        </aside>
+        <div className="actions">
+          <button type="button" className="primary" onClick={handleSubmitCode} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit"}
+          </button>
+        </div>
+        <section className="outputPanel" aria-live="polite">
+          <p className="editorLabel">Submission</p>
+          <pre className="outputBox">{submitOutput || "Submit your code to check it against sample tests."}</pre>
+        </section>
+
+        <section className="workspaceStatusCard" aria-live="polite">
+          <p className="editorLabel">Progress</p>
+          <p className="statusRow">{isSavingProgress ? "Saving progress..." : "Progress synced"}</p>
+        </section>
       </div>
 
     </section>
