@@ -2,10 +2,13 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
 from .ai_services import call_elevenlabs_tts, call_openai_tutor, transcribe_audio_with_openai
+from .database import Base, engine, get_db
+from .db_models import AuthToken, User
 from .execution import evaluate_submission, execute_code
 from .models import (
     DEFAULT_PROBLEM_ID,
@@ -26,11 +29,9 @@ from .models import (
     ProblemId
 )
 from .problem_data import SUBMISSION_TESTS
+from .security import hash_password, verify_password
 
 load_dotenv()
-
-user_last_problem: dict[str, ProblemId] = {}
-token_to_email: dict[str, str] = {}
 
 app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
 app.add_middleware(
@@ -41,20 +42,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.on_event("startup")
+def on_startup() -> None:
+    Base.metadata.create_all(bind=engine)
+
+
 @app.get("/health")
 def health() -> dict[str, object]:
     return {"ok": True, "service": "voice-ai-dsa-mentor-api"}
 
-def require_authenticated_email(authorization: str | None) -> str:
+def require_authenticated_user(authorization: str | None, db: Session) -> User:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization token")
 
     token = authorization[7:].strip()
-    email = token_to_email.get(token)
-    if not email:
+    auth_token = db.get(AuthToken, token)
+    if not auth_token:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-    return email
+    user = db.get(User, auth_token.user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    return user
 
 @app.post("/api/session/start", response_model=SessionStartResponse, status_code=201)
 def start_session(payload: SessionStartRequest) -> SessionStartResponse:
@@ -66,32 +77,48 @@ def start_session(payload: SessionStartRequest) -> SessionStartResponse:
     )
 
 @app.post("/api/auth/signin", response_model=SignInResponse, status_code=200)
-def sign_in(payload: SignInRequest) -> SignInResponse:
+def sign_in(payload: SignInRequest, db: Session = Depends(get_db)) -> SignInResponse:
     email = payload.email.strip().lower()
     if "@" not in email:
         raise HTTPException(status_code=422, detail="Please provide a valid email address")
 
-    if email not in user_last_problem:
-        user_last_problem[email] = DEFAULT_PROBLEM_ID
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        user = User(
+            email=email,
+            password_hash=hash_password(payload.password),
+            last_problem_id=DEFAULT_PROBLEM_ID,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    elif not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = str(uuid4())
-    token_to_email[token] = email
+    db.add(AuthToken(token=token, user_id=user.id))
+    db.commit()
 
-    return SignInResponse(token=token, email=email, lastProblemId=user_last_problem[email])
+    return SignInResponse(token=token, email=user.email, lastProblemId=ProblemId(user.last_problem_id))
 
 @app.get("/api/users/me/last-problem", response_model=LastProblemResponse, status_code=200)
-def get_last_problem(authorization: str | None = Header(default=None)) -> LastProblemResponse:
-    email = require_authenticated_email(authorization)
-    return LastProblemResponse(email=email, lastProblemId=user_last_problem.get(email, DEFAULT_PROBLEM_ID))
+def get_last_problem(
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> LastProblemResponse:
+    user = require_authenticated_user(authorization, db)
+    return LastProblemResponse(email=user.email, lastProblemId=ProblemId(user.last_problem_id))
 
 @app.patch("/api/users/me/last-problem", response_model=LastProblemResponse, status_code=200)
 def update_last_problem(
     payload: LastProblemUpdateRequest,
     authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
 ) -> LastProblemResponse:
-    email = require_authenticated_email(authorization)
-    user_last_problem[email] = payload.problemId
-    return LastProblemResponse(email=email, lastProblemId=user_last_problem[email])
+    user = require_authenticated_user(authorization, db)
+    user.last_problem_id = payload.problemId
+    db.commit()
+    return LastProblemResponse(email=user.email, lastProblemId=ProblemId(user.last_problem_id))
 
 @app.post("/api/code/run", response_model=RunCodeResponse, status_code=200)
 def run_code(payload: RunCodeRequest) -> RunCodeResponse:
