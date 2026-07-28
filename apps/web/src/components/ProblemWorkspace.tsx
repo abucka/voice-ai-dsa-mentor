@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CodeEditorPanel from "./CodeEditorPanel";
 import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
-import { DsaProblem, MentorMode } from "../types";
+import { DsaProblem } from "../types";
 import { runCode } from "../services/codeRunner";
 import { askTutor } from "../services/helpTutor";
 import { transcribeVoice } from "../services/voiceTranscriber";
@@ -12,11 +12,7 @@ type ProblemWorkspaceProps = {
   currentProblem: DsaProblem;
   currentProblemIndex: number;
   totalProblems: number;
-  mode: MentorMode;
-  modes: MentorMode[];
-  subtitle: string;
   isSavingProgress: boolean;
-  onModeChange: (mode: MentorMode) => void;
   onNextProblem: () => Promise<void>;
   onSignOut: () => void;
 };
@@ -26,11 +22,7 @@ export default function ProblemWorkspace({
   currentProblem,
   currentProblemIndex,
   totalProblems,
-  mode,
-  modes,
-  subtitle,
   isSavingProgress,
-  onModeChange,
   onNextProblem,
   onSignOut
 }: ProblemWorkspaceProps) {
@@ -118,7 +110,7 @@ export default function ProblemWorkspace({
     setHelpAnswer("");
 
     try {
-      const result = await askTutor(currentProblem.id, language, code, trimmedQuestion, mode);
+      const result = await askTutor(currentProblem.id, language, code, trimmedQuestion, "explain");
       setHelpAnswer(result.answer);
       setHelpStatus(result.answer || "Tutor answered.");
     } catch (error) {
@@ -247,7 +239,7 @@ export default function ProblemWorkspace({
 
       <div className="workspaceInsights" aria-label="Current learning context">
         <p className="workspaceMetaText">Problem {currentProblemIndex} of {totalProblems}</p>
-        <p className="workspaceMetaText">Mode: {mode}</p>
+          <p className="workspaceMetaText">Language: Python</p>
       </div>
       <div className="progressTrack" role="progressbar" aria-valuenow={currentProblemIndex} aria-valuemin={1} aria-valuemax={totalProblems}>
         <span style={{ width: `${progressPercent}%` }} />
@@ -262,27 +254,6 @@ export default function ProblemWorkspace({
             <h3>{currentProblem.title}</h3>
             <p>{currentProblem.summary}</p>
           </article>
-
-          <section className="modePickerCard" aria-label="Mentor mode selector">
-            <div>
-              <p className="editorLabel">Mentor mode</p>
-              <p className="modeCopy">{subtitle}</p>
-            </div>
-            <label htmlFor="mentorMode" className="srOnly">
-              Select mentor mode
-            </label>
-            <select
-              id="mentorMode"
-              value={mode}
-              onChange={(event) => onModeChange(event.target.value as MentorMode)}
-            >
-              {modes.map((availableMode) => (
-                <option key={availableMode} value={availableMode}>
-                  {availableMode}
-                </option>
-              ))}
-            </select>
-          </section>
 
           <CodeEditorPanel
             language={language}

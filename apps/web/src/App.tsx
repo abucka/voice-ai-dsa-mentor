@@ -3,14 +3,13 @@ import LandingScreen from "./components/LandingScreen";
 import ProblemWorkspace from "./components/ProblemWorkspace";
 import SignInScreen from "./components/SignInScreen";
 import { REQUIRE_SIGNIN_PARAM } from "./config/appConfig";
-import { MODES, PROBLEMS } from "./constants/problems";
+import { PROBLEMS } from "./constants/problems";
 import { persistLastProblem, signIn } from "./services/authService";
 import { getInitialProblemId, saveProblemIdLocally } from "./services/progressStorage";
-import { DsaProblem, MentorMode, Screen } from "./types";
+import { DsaProblem, Screen } from "./types";
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("landing");
-  const [mode, setMode] = useState<MentorMode>("explain");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signedInEmail, setSignedInEmail] = useState("");
@@ -19,12 +18,6 @@ export default function App() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [lastProblemId, setLastProblemId] = useState<number>(getInitialProblemId);
-
-  const subtitle = useMemo(() => {
-    if (mode === "interview") return "Interview simulation with strict feedback";
-    if (mode === "hints-only") return "Nudges only, no full solution spoilers";
-    return "Concept-first guidance with examples and tradeoffs";
-  }, [mode]);
 
   const currentProblem = useMemo(
     () => PROBLEMS.find((problem) => problem.id === lastProblemId) ?? PROBLEMS[0],
@@ -114,11 +107,7 @@ export default function App() {
           currentProblem={currentProblem}
           currentProblemIndex={currentProblemIndex}
           totalProblems={PROBLEMS.length}
-          mode={mode}
-          modes={MODES}
-          subtitle={subtitle}
           isSavingProgress={isSavingProgress}
-          onModeChange={setMode}
           onNextProblem={goToNextProblem}
           onSignOut={() => {
             setAuthToken("");

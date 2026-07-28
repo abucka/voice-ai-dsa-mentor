@@ -314,19 +314,6 @@ button:focus-visible {
   padding: 1.1rem;
 }
 
-.modePickerCard {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 0.9rem;
-  background: rgba(255, 255, 255, 0.74);
-  display: grid;
-  gap: 0.65rem;
-}
-
-.modePickerCard .modeCopy {
-  margin-top: 0.3rem;
-}
-
 .problemMeta {
   display: flex;
   gap: 0.55rem;
