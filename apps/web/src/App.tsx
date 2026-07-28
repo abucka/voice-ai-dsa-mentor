@@ -84,6 +84,12 @@ export default function App() {
     await saveProgress(next.id);
   }
 
+  async function goToPreviousProblem() {
+    const index = PROBLEMS.findIndex((problem) => problem.id === currentProblem.id);
+    const previous = PROBLEMS[(index - 1 + PROBLEMS.length) % PROBLEMS.length];
+    await saveProgress(previous.id);
+  }
+
   return (
     <main className="page">
       {screen === "landing" && <LandingScreen onStartLearning={handleStartLearning} />}
@@ -108,6 +114,7 @@ export default function App() {
           currentProblemIndex={currentProblemIndex}
           totalProblems={PROBLEMS.length}
           isSavingProgress={isSavingProgress}
+          onPreviousProblem={goToPreviousProblem}
           onNextProblem={goToNextProblem}
           onSignOut={() => {
             setAuthToken("");

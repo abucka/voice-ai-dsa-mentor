@@ -13,6 +13,7 @@ type ProblemWorkspaceProps = {
   currentProblemIndex: number;
   totalProblems: number;
   isSavingProgress: boolean;
+  onPreviousProblem: () => Promise<void>;
   onNextProblem: () => Promise<void>;
   onSignOut: () => void;
 };
@@ -23,6 +24,7 @@ export default function ProblemWorkspace({
   currentProblemIndex,
   totalProblems,
   isSavingProgress,
+  onPreviousProblem,
   onNextProblem,
   onSignOut
 }: ProblemWorkspaceProps) {
@@ -228,6 +230,9 @@ export default function ProblemWorkspace({
           <h2>Practice workspace</h2>
         </div>
         <div className="workspaceHeaderActions">
+          <button type="button" className="ghost" onClick={onPreviousProblem}>
+            Previous problem
+          </button>
           <button type="button" className="ghost" onClick={onNextProblem}>
             Next problem
           </button>
