@@ -1,4 +1,7 @@
-from datetime import datetime, timezone
+import os
+import time
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -33,13 +36,24 @@ from .security import hash_password, verify_password
 
 load_dotenv()
 
+TOKEN_TTL_HOURS = int(os.environ.get("AUTH_TOKEN_TTL_HOURS", "24"))
+SIGNIN_RATE_LIMIT_ATTEMPTS = 5
+SIGNIN_RATE_LIMIT_WINDOW_SECONDS = 60
+_signin_attempts: dict[str, list[float]] = defaultdict(list)
+
+
+def _allowed_origins() -> list[str]:
+    raw = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
 app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_origins(),
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
@@ -61,11 +75,26 @@ def require_authenticated_user(authorization: str | None, db: Session) -> User:
     if not auth_token:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
+    expires_at = auth_token.created_at + timedelta(hours=TOKEN_TTL_HOURS)
+    if datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc):
+        db.delete(auth_token)
+        db.commit()
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
     user = db.get(User, auth_token.user_id)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     return user
+
+
+def _check_signin_rate_limit(email: str) -> None:
+    now = time.monotonic()
+    attempts = _signin_attempts[email]
+    attempts[:] = [attempt for attempt in attempts if now - attempt < SIGNIN_RATE_LIMIT_WINDOW_SECONDS]
+    if len(attempts) >= SIGNIN_RATE_LIMIT_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many sign-in attempts. Please try again shortly.")
+    attempts.append(now)
 
 @app.post("/api/session/start", response_model=SessionStartResponse, status_code=201)
 def start_session(payload: SessionStartRequest) -> SessionStartResponse:
@@ -81,6 +110,8 @@ def sign_in(payload: SignInRequest, db: Session = Depends(get_db)) -> SignInResp
     email = payload.email.strip().lower()
     if "@" not in email:
         raise HTTPException(status_code=422, detail="Please provide a valid email address")
+
+    _check_signin_rate_limit(email)
 
     user = db.query(User).filter(User.email == email).first()
     if user is None:
@@ -100,6 +131,19 @@ def sign_in(payload: SignInRequest, db: Session = Depends(get_db)) -> SignInResp
     db.commit()
 
     return SignInResponse(token=token, email=user.email, lastProblemId=ProblemId(user.last_problem_id))
+
+@app.delete("/api/auth/signout", status_code=204)
+def sign_out(
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> None:
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+        auth_token = db.get(AuthToken, token)
+        if auth_token:
+            db.delete(auth_token)
+            db.commit()
+    return None
 
 @app.get("/api/users/me/last-problem", response_model=LastProblemResponse, status_code=200)
 def get_last_problem(

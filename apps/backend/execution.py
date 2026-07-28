@@ -6,6 +6,29 @@ from pathlib import Path
 from .models import CodeLanguage, ProblemId, RunCodeResponse, SubmitTestResult
 from .problem_data import SUBMISSION_TESTS, build_python_harness, normalize_output
 
+# Untrusted user code runs as a plain subprocess, not inside a container/VM. This is NOT a
+# strong sandbox: it will not stop syscalls, filesystem access outside cwd, or slow network
+# calls made from within the submitted code. For a production deployment, run submissions in
+# an isolated container/microVM (e.g. gVisor, Firecracker, Docker with seccomp + no network)
+# instead of relying on subprocess limits alone.
+MAX_OUTPUT_BYTES = 64 * 1024
+_MINIMAL_ENV = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "PYTHONIOENCODING": "utf-8"}
+
+
+def _limit_subprocess_resources() -> None:
+    """Best-effort resource caps applied in the child process before exec (POSIX only)."""
+    try:
+        import resource
+
+        one_mb = 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
+        resource.setrlimit(resource.RLIMIT_AS, (256 * one_mb, 256 * one_mb))
+        resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
+        resource.setrlimit(resource.RLIMIT_NPROC, (32, 32))
+    except (ImportError, ValueError, OSError):
+        # resource module is POSIX-only and some limits aren't settable on every platform.
+        pass
+
 
 def execute_python_code(problem_id: ProblemId, code: str, stdin_text: str) -> RunCodeResponse:
     timeout_seconds = 5
@@ -18,26 +41,28 @@ def execute_python_code(problem_id: ProblemId, code: str, stdin_text: str) -> Ru
 
         try:
             completed = subprocess.run(
-                [sys.executable, str(code_file)],
+                [sys.executable, "-I", str(code_file)],
                 cwd=temp_dir,
                 input=stdin_text,
                 capture_output=True,
                 text=True,
                 timeout=timeout_seconds,
+                env=_MINIMAL_ENV,
+                preexec_fn=_limit_subprocess_resources if sys.platform != "win32" else None,
             )
         except subprocess.TimeoutExpired as error:
             return RunCodeResponse(
                 language="python",
-                stdout=error.stdout or "",
-                stderr=error.stderr or "Timed out while running Python code",
+                stdout=(error.stdout or "")[:MAX_OUTPUT_BYTES],
+                stderr=(error.stderr or "Timed out while running Python code")[:MAX_OUTPUT_BYTES],
                 exitCode=124,
                 timedOut=True,
             )
 
         return RunCodeResponse(
             language="python",
-            stdout=completed.stdout,
-            stderr=completed.stderr,
+            stdout=completed.stdout[:MAX_OUTPUT_BYTES],
+            stderr=completed.stderr[:MAX_OUTPUT_BYTES],
             exitCode=completed.returncode,
             timedOut=False,
         )
