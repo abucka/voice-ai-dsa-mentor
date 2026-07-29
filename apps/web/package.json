@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "echo \"No linter configured yet for web\"",
     "typecheck": "tsc --noEmit",
-    "format": "echo \"No formatter configured yet for web\""
+    "format": "echo \"No formatter configured yet for web\"",
+    "test": "vitest run"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -18,9 +19,13 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
     "@types/react": "^18.3.8",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.2",
-    "vite": "^5.4.8"
+    "jsdom": "^25.0.1",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.8"
   }
 }
