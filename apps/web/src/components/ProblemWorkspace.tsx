@@ -114,7 +114,7 @@ export default function ProblemWorkspace({
     try {
       const result = await askTutor(currentProblem.id, language, code, trimmedQuestion, "explain");
       setHelpAnswer(result.answer);
-      setHelpStatus(result.answer || "Tutor answered.");
+      setHelpStatus("Tutor answered.");
     } catch (error) {
       setHelpStatus(error instanceof Error ? error.message : "Unable to get tutor help.");
     } finally {
@@ -314,7 +314,7 @@ export default function ProblemWorkspace({
             rows={4}
           />
           <p className="statusRow">{helpStatus || "Ask a question and the tutor will reply here."}</p>
-          {helpAnswer && (
+          { (
             <div className="helpAnswerBox">
               <p className="editorLabel">Tutor response</p>
               <pre className="outputBox tutorAnswerBox">{helpAnswer}</pre>
@@ -332,10 +332,6 @@ export default function ProblemWorkspace({
           <pre className="outputBox">{submitOutput || "Submit your code to check it against sample tests."}</pre>
         </section>
 
-        <section className="workspaceStatusCard" aria-live="polite">
-          <p className="editorLabel">Progress</p>
-          <p className="statusRow">{isSavingProgress ? "Saving progress..." : "Progress synced"}</p>
-        </section>
       </div>
 
     </section>
