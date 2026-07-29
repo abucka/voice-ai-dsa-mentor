@@ -44,6 +44,7 @@ export default function ProblemWorkspace({
 
   const language = "python" as const;
   const filename = CODE_LANGUAGES[0]?.filename ?? "main.py";
+  const progressPercent = Math.min(100, Math.max(0, (currentProblemIndex / totalProblems) * 100));
 
   useEffect(() => {
     setCode(getSolveTemplate(currentProblem.id));
@@ -245,6 +246,9 @@ export default function ProblemWorkspace({
         <p className="workspaceMetaText">Problem {currentProblemIndex} of {totalProblems}</p>
         <p className="workspaceMetaText">Language: Python</p>
       </div>
+      <div className="progressTrack" role="progressbar" aria-valuenow={currentProblemIndex} aria-valuemin={1} aria-valuemax={totalProblems}>
+        <span style={{ width: `${progressPercent}%` }} />
+      </div>
       <div className="workspaceFlow">
         <article className="problemCard">
           <div className="problemMeta">
@@ -280,10 +284,7 @@ export default function ProblemWorkspace({
           <div className="workspaceSecondaryColumn">
             <section className="helpPanel">
               <div className="helpHeaderRow">
-                <div>
-                  <p className="editorLabel">AI Tutor Coach</p>
-                  <p className="helpSubtext">Get guidance without leaving the flow.</p>
-                </div>
+                <p className="editorLabel">AI Tutor Coach</p>
                 <div className="helpButtonGroup">
                   <button type="button" className="ghost helpButton" onClick={() => void handleAskTutor()} disabled={isAskingHelp || isRecordingVoice}>
                     {isAskingHelp ? "Asking..." : "Help"}
@@ -303,18 +304,6 @@ export default function ProblemWorkspace({
                   >
                     {isRecordingVoice ? "Stop Voice" : "Ask by Voice"}
                   </button>
-                </div>
-              </div>
-
-              <div className="helpTipList" aria-label="Tutor suggestions">
-                <div className="helpTipItem">
-                  <strong>Try this:</strong> describe the edge case you are worried about.
-                </div>
-                <div className="helpTipItem">
-                  <strong>Good prompt:</strong> “What should I optimize for first?”
-                </div>
-                <div className="helpTipItem">
-                  <strong>Voice tip:</strong> speak naturally if you want a faster explanation.
                 </div>
               </div>
 
