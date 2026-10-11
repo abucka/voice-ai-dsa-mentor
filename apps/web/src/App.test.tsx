@@ -22,10 +22,7 @@ vi.mock("./services/progressStorage", () => ({
 }));
 
 vi.mock("./services/codeRunner", () => ({ runCode: vi.fn() }));
-vi.mock("./services/helpTutor", () => ({
-  askTutor: vi.fn(),
-  buildTutorWebSocketUrl: () => "ws://localhost:4000/ws/tutor"
-}));
+vi.mock("./services/helpTutor", () => ({ askTutor: vi.fn() }));
 vi.mock("./services/voiceTranscriber", () => ({ transcribeVoice: vi.fn() }));
 vi.mock("./services/codeSubmitter", () => ({ submitCode: vi.fn() }));
 

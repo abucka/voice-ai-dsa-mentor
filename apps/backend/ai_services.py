@@ -11,28 +11,6 @@ from fastapi import HTTPException
 from .models import MentorMode, ProblemId
 from .problem_data import get_problem_summary
 
-
-def _fallback_tutor_response(problem_id: ProblemId, question: str, code: str, conversation_history: list[dict[str, str]] | None, mode: MentorMode) -> str:
-    history_context = ""
-    if conversation_history:
-        recent_turns = []
-        for item in conversation_history[-4:]:
-            recent_turns.append(f"{item['role'].title()}: {item['content']}")
-        history_context = "\n".join(recent_turns)
-
-    if history_context:
-        return (
-            f"I’m keeping this conversation going. Based on the earlier exchange ({history_context}), "
-            f"you’re asking about {question}. Focus on the core invariant for this problem, "
-            f"and try a small example to verify your reasoning before you change the code."
-        )
-
-    return (
-        f"I can help you work through this {mode} style. Your question was: {question}. "
-        "Start by identifying the smallest example that should pass and the edge case that might fail, "
-        "then adjust your code around that invariant."
-    )
-
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions"
 ELEVENLABS_TTS_URL_TEMPLATE = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
@@ -51,13 +29,7 @@ def read_json_response(response: object) -> dict[str, object]:
     return json.loads(response.read().decode("utf-8"))
 
 
-def call_openai_tutor(
-    problem_id: ProblemId,
-    question: str,
-    code: str,
-    mode: MentorMode,
-    conversation_history: list[dict[str, str]] | None = None,
-) -> str:
+def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mode: MentorMode) -> str:
     api_key = os.environ.get("OPENAI_API_KEY")
     model = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 
@@ -72,16 +44,12 @@ def call_openai_tutor(
         f"Current code:\n{code}\n"
     )
 
-    messages = [{"role": "system", "content": SYSTEM_TUTOR_PROMPT}]
-    if conversation_history:
-        for entry in conversation_history[-8:]:
-            messages.append({"role": entry["role"], "content": entry["content"]})
-
-    messages.append({"role": "user", "content": user_prompt})
-
     payload = {
         "model": model,
-        "messages": messages,
+        "messages": [
+            {"role": "system", "content": SYSTEM_TUTOR_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
         "temperature": 0.3,
     }
 
@@ -107,25 +75,6 @@ def call_openai_tutor(
         raise HTTPException(status_code=500, detail="OpenAI returned no tutor answer")
 
     return choices[0]["message"]["content"].strip()
-
-
-def get_tutor_reply(
-    problem_id: ProblemId,
-    question: str,
-    code: str,
-    conversation_history: list[dict[str, str]] | None,
-    mode: MentorMode,
-) -> str:
-    try:
-        return call_openai_tutor(problem_id, question, code, mode, conversation_history)
-    except HTTPException as exc:
-        if exc.status_code == 500 and "OPENAI_API_KEY" in str(exc.detail):
-            return _fallback_tutor_response(problem_id, question, code, conversation_history, mode)
-        if exc.status_code == 500:
-            return _fallback_tutor_response(problem_id, question, code, conversation_history, mode)
-        raise
-    except Exception:
-        return _fallback_tutor_response(problem_id, question, code, conversation_history, mode)
 
 
 def call_elevenlabs_tts(answer: str) -> tuple[str | None, str | None, str | None]:

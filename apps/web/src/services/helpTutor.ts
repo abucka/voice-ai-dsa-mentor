@@ -22,8 +22,3 @@ export async function askTutor(
 
   return (await response.json()) as HelpTutorResponse;
 }
-
-export function buildTutorWebSocketUrl() {
-  const normalized = API_BASE_URL.replace(/^http/, "ws").replace(/^https/, "wss");
-  return `${normalized}/ws/tutor`;
-}
