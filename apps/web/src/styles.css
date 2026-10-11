@@ -441,6 +441,47 @@ button:focus-visible {
   flex-wrap: wrap;
 }
 
+.tutorConversation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.tutorEmptyState {
+  border: 1px dashed rgba(15, 98, 254, 0.2);
+  border-radius: 12px;
+  padding: 0.8rem;
+  color: var(--subtle);
+  background: rgba(15, 98, 254, 0.04);
+}
+
+.tutorMessage {
+  border-radius: 12px;
+  padding: 0.7rem 0.8rem;
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tutorMessage strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+}
+
+.tutorMessage p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.tutorMessage.assistant {
+  background: rgba(15, 98, 254, 0.06);
+  border-color: rgba(15, 98, 254, 0.14);
+}
+
 .helpButton {
   margin-top: 0;
   width: 100%;

@@ -5,11 +5,11 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from .ai_services import call_elevenlabs_tts, call_openai_tutor, transcribe_audio_with_openai
+from .ai_services import call_elevenlabs_tts, call_openai_tutor, get_tutor_reply, transcribe_audio_with_openai
 from .database import Base, engine, get_db
 from .db_models import AuthToken, User
 from .execution import evaluate_submission, execute_code
@@ -191,7 +191,7 @@ def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
 
 @app.post("/api/help", response_model=HelpCodeResponse, status_code=200)
 def help_code(payload: HelpCodeRequest) -> HelpCodeResponse:
-    answer = call_openai_tutor(payload.problemId, payload.question, payload.code, payload.mode)
+    answer = get_tutor_reply(payload.problemId, payload.question, payload.code, None, payload.mode)
     audio_base64, audio_mime_type, voice_used = call_elevenlabs_tts(answer)
 
     return HelpCodeResponse(
@@ -201,6 +201,45 @@ def help_code(payload: HelpCodeRequest) -> HelpCodeResponse:
         audioMimeType=audio_mime_type,
         voiceUsed=voice_used,
     )
+
+@app.websocket("/ws/tutor")
+async def tutor_websocket(websocket: WebSocket) -> None:
+    await websocket.accept()
+    await websocket.send_json({"type": "ready", "message": "Tutor connected. Ask me anything about this problem."})
+
+    conversation_history: list[dict[str, str]] = []
+
+    try:
+        while True:
+            payload = await websocket.receive_json()
+            message_type = payload.get("type", "message")
+
+            if message_type == "reset":
+                conversation_history = []
+                await websocket.send_json({"type": "ready", "message": "Conversation cleared."})
+                continue
+
+            question = str(payload.get("question", "")).strip()
+            if not question:
+                await websocket.send_json({"type": "error", "message": "Please send a question."})
+                continue
+
+            try:
+                answer = get_tutor_reply(
+                    problem_id=payload.get("problemId", DEFAULT_PROBLEM_ID),
+                    question=question,
+                    code=str(payload.get("code", "")),
+                    conversation_history=conversation_history,
+                    mode=payload.get("mode", "explain"),
+                )
+            except Exception:
+                answer = "I’m sorry, I couldn’t generate a tutor reply right now. Please try again in a moment."
+
+            conversation_history.append({"role": "user", "content": question})
+            conversation_history.append({"role": "assistant", "content": answer})
+            await websocket.send_json({"type": "message", "role": "assistant", "content": answer})
+    except WebSocketDisconnect:
+        return
 
 @app.post("/api/help/transcribe", response_model=TranscribeAudioResponse, status_code=200)
 def transcribe_audio(payload: TranscribeAudioRequest) -> TranscribeAudioResponse:

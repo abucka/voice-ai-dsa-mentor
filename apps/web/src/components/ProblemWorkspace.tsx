@@ -3,7 +3,7 @@ import CodeEditorPanel from "./CodeEditorPanel";
 import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
 import { DsaProblem } from "../types";
 import { runCode } from "../services/codeRunner";
-import { askTutor } from "../services/helpTutor";
+import { buildTutorWebSocketUrl } from "../services/helpTutor";
 import { transcribeVoice } from "../services/voiceTranscriber";
 import { submitCode } from "../services/codeSubmitter";
 
@@ -34,6 +34,7 @@ export default function ProblemWorkspace({
   const [helpQuestion, setHelpQuestion] = useState("");
   const [helpAnswer, setHelpAnswer] = useState("");
   const [helpStatus, setHelpStatus] = useState("");
+  const [tutorMessages, setTutorMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const [isAskingHelp, setIsAskingHelp] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
@@ -41,6 +42,7 @@ export default function ProblemWorkspace({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
+  const tutorSocketRef = useRef<WebSocket | null>(null);
 
   const language = "python" as const;
   const filename = CODE_LANGUAGES[0]?.filename ?? "main.py";
@@ -53,6 +55,7 @@ export default function ProblemWorkspace({
     setHelpQuestion("");
     setHelpAnswer("");
     setHelpStatus("");
+    setTutorMessages([]);
     setIsAskingHelp(false);
     setIsRecordingVoice(false);
     setSubmitOutput("");
@@ -61,6 +64,45 @@ export default function ProblemWorkspace({
     mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
     mediaStreamRef.current = null;
     audioChunksRef.current = [];
+
+    const socket = new WebSocket(buildTutorWebSocketUrl());
+    tutorSocketRef.current = socket;
+
+    socket.addEventListener("open", () => {
+      setHelpStatus("Tutor is ready.");
+    });
+
+    socket.addEventListener("message", (event) => {
+      try {
+        const payload = JSON.parse(event.data) as { type?: string; message?: string; content?: string; role?: string };
+        if (payload.type === "message") {
+          const content = payload.content?.trim() || "";
+          if (content) {
+            setTutorMessages((previous) => [...previous, { role: "assistant", content }]);
+            setHelpAnswer(content);
+            setHelpStatus("Tutor answered.");
+          }
+        } else if (payload.type === "ready") {
+          setHelpStatus(payload.message || "Tutor is ready.");
+        } else if (payload.type === "error") {
+          setHelpStatus(payload.message || "Unable to connect to the tutor.");
+        }
+      } catch {
+        setHelpStatus("Unable to read the tutor response.");
+      } finally {
+        setIsAskingHelp(false);
+      }
+    });
+
+    socket.addEventListener("error", () => {
+      setHelpStatus("The tutor connection dropped. Please try again.");
+      setIsAskingHelp(false);
+    });
+
+    return () => {
+      socket.close();
+      tutorSocketRef.current = null;
+    };
   }, [currentProblem.id]);
 
   function handleReset() {
@@ -107,19 +149,28 @@ export default function ProblemWorkspace({
       return;
     }
 
+    const socket = tutorSocketRef.current;
     setIsAskingHelp(true);
     setHelpStatus("Asking the tutor...");
     setHelpAnswer("");
+    setTutorMessages((previous) => [...previous, { role: "user", content: trimmedQuestion }]);
 
-    try {
-      const result = await askTutor(currentProblem.id, language, code, trimmedQuestion, "explain");
-      setHelpAnswer(result.answer);
-      setHelpStatus("Tutor answered.");
-    } catch (error) {
-      setHelpStatus(error instanceof Error ? error.message : "Unable to get tutor help.");
-    } finally {
-      setIsAskingHelp(false);
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({
+          type: "message",
+          problemId: currentProblem.id,
+          language,
+          code,
+          question: trimmedQuestion,
+          mode: "explain"
+        })
+      );
+      return;
     }
+
+    setHelpStatus("The tutor connection is not ready yet. Please try again.");
+    setIsAskingHelp(false);
   }
 
   async function startVoiceHelp() {
@@ -319,9 +370,21 @@ export default function ProblemWorkspace({
                 rows={4}
               />
               <p className="statusRow">{helpStatus || "Ask a question and the tutor will reply here."}</p>
+              <div className="tutorConversation" aria-live="polite">
+                {tutorMessages.length === 0 ? (
+                  <div className="tutorEmptyState">Start with a simple question and keep the conversation going.</div>
+                ) : (
+                  tutorMessages.map((message, index) => (
+                    <div key={`${message.role}-${index}`} className={`tutorMessage ${message.role}`}>
+                      <strong>{message.role === "user" ? "You" : "Tutor"}</strong>
+                      <p>{message.content}</p>
+                    </div>
+                  ))
+                )}
+              </div>
               {helpAnswer && (
                 <div className="helpAnswerBox">
-                  <p className="editorLabel">Tutor response</p>
+                  <p className="editorLabel">Latest tutor response</p>
                   <pre className="outputBox tutorAnswerBox">{helpAnswer}</pre>
                 </div>
               )}
