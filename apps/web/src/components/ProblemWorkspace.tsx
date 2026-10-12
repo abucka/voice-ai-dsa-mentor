@@ -76,11 +76,9 @@ export default function ProblemWorkspace({
       if (!response.ok) {
         throw new Error(data.detail || "Failed to fetch solution");
       }
-      if (data.solution !== "") {
-        setCode(data.solution);
-      } else {
-        setCode(getSolveTemplate(currentProblem.id));
-      }
+      
+      data.solution === "" ? setCode(getSolveTemplate(currentProblem.id)) : setCode(data.solution);
+
   }
 
   function handleReset() {
