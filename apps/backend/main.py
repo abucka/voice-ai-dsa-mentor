@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from .ai_services import call_elevenlabs_tts, call_openai_tutor, transcribe_audio_with_openai
 from .database import Base, engine, get_db
-from .db_models import AuthToken, User
+from .db_models import AuthToken, User, SolvedProblems
 from .execution import evaluate_submission, execute_code
 from .models import (
     DEFAULT_PROBLEM_ID,
@@ -29,7 +29,8 @@ from .models import (
     SubmitCodeResponse,
     TranscribeAudioRequest,
     TranscribeAudioResponse,
-    ProblemId
+    ProblemId,
+    ProblemSolution
 )
 from .problem_data import SUBMISSION_TESTS
 from .security import hash_password, verify_password
@@ -153,6 +154,11 @@ def get_last_problem(
     user = require_authenticated_user(authorization, db)
     return LastProblemResponse(email=user.email, lastProblemId=ProblemId(user.last_problem_id))
 
+#@app.patch("/problems/{problem_id}")
+#def update_problem(problem_id: int):
+#    _update_problem_solution(db, payload.problemId, payload.code)
+#    return {"message": "Updated successfully"}
+
 @app.patch("/api/users/me/last-problem", response_model=LastProblemResponse, status_code=200)
 def update_last_problem(
     payload: LastProblemUpdateRequest,
@@ -172,11 +178,24 @@ def run_code(payload: RunCodeRequest) -> RunCodeResponse:
 
     return execute_code(payload.problemId, payload.language, payload.code, tests[0])
 
+def _update_problem_solution(db: Session, problem_id: ProblemId, code: str):
+    problem = db.get(SolvedProblems, problem_id)
+
+    if problem:
+        problem.solution = code
+    else:
+        problem = SolvedProblems(problem_id=problem_id, solution=code)
+        db.add(problem)
+
+    db.commit()
+
 @app.post("/api/code/submit", response_model=SubmitCodeResponse, status_code=200)
-def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
+def submit_code(payload: SubmitCodeRequest, db: Session = Depends(get_db)) -> SubmitCodeResponse:
     tests = SUBMISSION_TESTS.get(payload.problemId, [])
     if not tests:
         raise HTTPException(status_code=422, detail="No tests found for this problem")
+
+    _update_problem_solution(db, payload.problemId, payload.code)
 
     results, passed_tests, total_tests = evaluate_submission(payload.problemId, payload.code)
     return SubmitCodeResponse(
@@ -188,6 +207,16 @@ def submit_code(payload: SubmitCodeRequest) -> SubmitCodeResponse:
         note=None if passed_tests == total_tests else "One or more sample tests failed",
         results=results,
     )
+
+@app.get("/api/problems/{problem_id}/solution", response_model=ProblemSolution, status_code=200)
+def get_last_problem(
+    problem_id: ProblemId,
+    db: Session = Depends(get_db),
+) -> str:
+    problem = db.get(SolvedProblems, problem_id)
+    if not problem:
+        return ProblemSolution(solution="")
+    return ProblemSolution(solution=problem.solution)
 
 @app.post("/api/help", response_model=HelpCodeResponse, status_code=200)
 def help_code(payload: HelpCodeRequest) -> HelpCodeResponse:

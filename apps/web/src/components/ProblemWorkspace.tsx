@@ -7,6 +7,8 @@ import { askTutor } from "../services/helpTutor";
 import { transcribeVoice } from "../services/voiceTranscriber";
 import { submitCode } from "../services/codeSubmitter";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+
 type ProblemWorkspaceProps = {
   signedInEmail: string;
   currentProblem: DsaProblem;
@@ -28,7 +30,7 @@ export default function ProblemWorkspace({
   onNextProblem,
   onSignOut
 }: ProblemWorkspaceProps) {
-  const [code, setCode] = useState<string>(() => getSolveTemplate(currentProblem.id));
+  const [code, setCode] = useState<string>("");
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [helpQuestion, setHelpQuestion] = useState("");
@@ -47,7 +49,7 @@ export default function ProblemWorkspace({
   const progressPercent = Math.min(100, Math.max(0, (currentProblemIndex / totalProblems) * 100));
 
   useEffect(() => {
-    setCode(getSolveTemplate(currentProblem.id));
+    fetchSolution();
     setRunOutput("");
     setIsRunning(false);
     setHelpQuestion("");
@@ -62,6 +64,24 @@ export default function ProblemWorkspace({
     mediaStreamRef.current = null;
     audioChunksRef.current = [];
   }, [currentProblem.id]);
+
+  async function fetchSolution() {
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/problems/${currentProblem.id}/solution`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to fetch solution");
+      }
+      if (data.solution !== "") {
+        setCode(data.solution);
+      } else {
+        setCode(getSolveTemplate(currentProblem.id));
+      }
+  }
 
   function handleReset() {
     setCode(getSolveTemplate(currentProblem.id));

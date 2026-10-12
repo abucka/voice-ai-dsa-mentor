@@ -35,6 +35,8 @@ class LastProblemResponse(BaseModel):
     email: str
     lastProblemId: ProblemId
 
+class ProblemSolution(BaseModel):
+    solution: str
 
 class LastProblemUpdateRequest(BaseModel):
     problemId: ProblemId

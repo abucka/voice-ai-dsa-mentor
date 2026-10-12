@@ -23,3 +23,9 @@ class AuthToken(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+class SolvedProblems(Base):
+    __tablename__ = "solved_problems"
+
+    problem_id: Mapped[int] = mapped_column(Integer, default=0, primary_key=True)
+    solution: Mapped[str] = mapped_column(String)
