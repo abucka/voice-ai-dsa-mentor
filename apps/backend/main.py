@@ -21,8 +21,6 @@ from .models import (
     LastProblemUpdateRequest,
     RunCodeRequest,
     RunCodeResponse,
-    SessionStartRequest,
-    SessionStartResponse,
     SignInRequest,
     SignInResponse,
     SubmitCodeRequest,
@@ -32,21 +30,14 @@ from .models import (
     ProblemId,
     ProblemSolution
 )
-from .problem_data import SUBMISSION_TESTS
-from .security import hash_password, verify_password
+from .problem_data import SUBMISSION_TESTS, update_problem_solution
+from .security import hash_password, require_authenticated_user, verify_password, check_signin_rate_limit
 
 load_dotenv()
-
-TOKEN_TTL_HOURS = int(os.environ.get("AUTH_TOKEN_TTL_HOURS", "24"))
-SIGNIN_RATE_LIMIT_ATTEMPTS = 5
-SIGNIN_RATE_LIMIT_WINDOW_SECONDS = 60
-_signin_attempts: dict[str, list[float]] = defaultdict(list)
-
 
 def _allowed_origins() -> list[str]:
     raw = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
-
 
 app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0")
 app.add_middleware(
@@ -57,62 +48,22 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
-
 
 @app.get("/health")
 def health() -> dict[str, object]:
     return {"ok": True, "service": "voice-ai-dsa-mentor-api"}
 
-def require_authenticated_user(authorization: str | None, db: Session) -> User:
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid authorization token")
-
-    token = authorization[7:].strip()
-    auth_token = db.get(AuthToken, token)
-    if not auth_token:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    expires_at = auth_token.created_at + timedelta(hours=TOKEN_TTL_HOURS)
-    if datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc):
-        db.delete(auth_token)
-        db.commit()
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    user = db.get(User, auth_token.user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    return user
-
-
-def _check_signin_rate_limit(email: str) -> None:
-    now = time.monotonic()
-    attempts = _signin_attempts[email]
-    attempts[:] = [attempt for attempt in attempts if now - attempt < SIGNIN_RATE_LIMIT_WINDOW_SECONDS]
-    if len(attempts) >= SIGNIN_RATE_LIMIT_ATTEMPTS:
-        raise HTTPException(status_code=429, detail="Too many sign-in attempts. Please try again shortly.")
-    attempts.append(now)
-
-@app.post("/api/session/start", response_model=SessionStartResponse, status_code=201)
-def start_session(payload: SessionStartRequest) -> SessionStartResponse:
-    return SessionStartResponse(
-    sessionId=str(uuid4()),
-    startedAt=datetime.now(timezone.utc).isoformat(),
-    mode=payload.mode,
-        topic=payload.topic,
-    )
-
+#### SECURITY ENDPOINTS
 @app.post("/api/auth/signin", response_model=SignInResponse, status_code=200)
 def sign_in(payload: SignInRequest, db: Session = Depends(get_db)) -> SignInResponse:
     email = payload.email.strip().lower()
     if "@" not in email:
         raise HTTPException(status_code=422, detail="Please provide a valid email address")
 
-    _check_signin_rate_limit(email)
+    check_signin_rate_limit(email)
 
     user = db.query(User).filter(User.email == email).first()
     if user is None:
@@ -170,6 +121,8 @@ def update_last_problem(
     db.commit()
     return LastProblemResponse(email=user.email, lastProblemId=ProblemId(user.last_problem_id))
 
+
+#### SOLVE PROBLEMS ENDPOINTS
 @app.post("/api/code/run", response_model=RunCodeResponse, status_code=200)
 def run_code(payload: RunCodeRequest) -> RunCodeResponse:
     tests = SUBMISSION_TESTS.get(payload.problemId, [])
@@ -178,24 +131,13 @@ def run_code(payload: RunCodeRequest) -> RunCodeResponse:
 
     return execute_code(payload.problemId, payload.language, payload.code, tests[0])
 
-def _update_problem_solution(db: Session, problem_id: ProblemId, code: str):
-    problem = db.get(SolvedProblems, problem_id)
-
-    if problem:
-        problem.solution = code
-    else:
-        problem = SolvedProblems(problem_id=problem_id, solution=code)
-        db.add(problem)
-
-    db.commit()
-
 @app.post("/api/code/submit", response_model=SubmitCodeResponse, status_code=200)
 def submit_code(payload: SubmitCodeRequest, db: Session = Depends(get_db)) -> SubmitCodeResponse:
     tests = SUBMISSION_TESTS.get(payload.problemId, [])
     if not tests:
         raise HTTPException(status_code=422, detail="No tests found for this problem")
 
-    _update_problem_solution(db, payload.problemId, payload.code)
+    update_problem_solution(db, payload.problemId, payload.code)
 
     results, passed_tests, total_tests = evaluate_submission(payload.problemId, payload.code)
     return SubmitCodeResponse(

@@ -1,5 +1,7 @@
 from .models import ProblemId
 import json
+from .db_models import SolvedProblems
+from sqlalchemy.orm import Session
 
 # Open the file and parse the JSON data into a dictionary
 with open('data/data.json', 'r', encoding='utf-8') as file:
@@ -15,6 +17,17 @@ SUBMISSION_TESTS: dict[int, list[list]] = {
 PROBLEM_SUMMARIES: dict[ProblemId, str] = {
     id: element["title"] for id, element in enumerate(PROBLEM_DATA["exercises"])
 }
+
+def update_problem_solution(db: Session, problem_id: ProblemId, code: str):
+    problem = db.get(SolvedProblems, problem_id)
+
+    if problem:
+        problem.solution = code
+    else:
+        problem = SolvedProblems(problem_id=problem_id, solution=code)
+        db.add(problem)
+
+    db.commit()
 
 def normalize_output(value: str) -> str:
     return value.strip()
