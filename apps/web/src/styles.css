@@ -330,6 +330,16 @@ button:focus-visible {
   background: rgba(255, 255, 255, 0.78);
 }
 
+.problemMeta.green span {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.problemMeta.red span {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
 .problemCard p {
   margin: 0.8rem 0 1rem;
   color: var(--subtle);

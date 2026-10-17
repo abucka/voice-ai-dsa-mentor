@@ -38,6 +38,7 @@ export default function ProblemWorkspace({
   const [helpStatus, setHelpStatus] = useState("");
   const [isAskingHelp, setIsAskingHelp] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [isSolved, setisSolved] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -233,6 +234,8 @@ export default function ProblemWorkspace({
         .join("\n");
 
       setSubmitOutput(output || "Submission completed.");
+      result.passed ? setisSolved(true) : setisSolved(false);
+      
     } catch (error) {
       setSubmitOutput(error instanceof Error ? error.message : "Unable to submit code.");
     } finally {
@@ -269,9 +272,20 @@ export default function ProblemWorkspace({
       </div>
       <div className="workspaceFlow">
         <article className="problemCard">
-          <div className="problemMeta">
-            <span>{currentProblem.difficulty}</span>
-            <span>{currentProblem.topic}</span>
+          <div className="workspaceInsights">
+            <div className="problemMeta">
+              <span>{currentProblem.difficulty}</span>
+              <span>{currentProblem.topic}</span>
+            </div>
+          {isSolved ? (
+            <div className="problemMeta green">
+              <span>✓ Solved</span>
+            </div>
+          ) : (
+            <div className="problemMeta red">
+              <span>✗ Not solved</span>
+            </div>
+          )}
           </div>
           <h3>{currentProblem.title}</h3>
           <p>{currentProblem.summary}</p>
