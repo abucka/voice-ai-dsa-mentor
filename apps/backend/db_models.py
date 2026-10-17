@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -28,4 +28,9 @@ class SolvedProblems(Base):
     __tablename__ = "solved_problems"
 
     problem_id: Mapped[int] = mapped_column(Integer, default=0, primary_key=True)
-    solution: Mapped[str] = mapped_column(String)
+    solution: Mapped[str] = mapped_column(String, default="", nullable=False)
+    is_solved: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False
+    )

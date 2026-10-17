@@ -136,14 +136,16 @@ def submit_code(payload: SubmitCodeRequest, db: Session = Depends(get_db)) -> Su
     tests = SUBMISSION_TESTS.get(payload.problemId, [])
     if not tests:
         raise HTTPException(status_code=422, detail="No tests found for this problem")
-
-    update_problem_solution(db, payload.problemId, payload.code)
-
+    
     results, passed_tests, total_tests = evaluate_submission(payload.problemId, payload.code)
+
+    passed = passed_tests == total_tests
+    update_problem_solution(db, payload.problemId, payload.code, passed)
+
     return SubmitCodeResponse(
         problemId=payload.problemId,
         language=payload.language,
-    passed=passed_tests == total_tests,
+    passed=passed,
     passedTests=passed_tests,
     totalTests=total_tests,
         note=None if passed_tests == total_tests else "One or more sample tests failed",
@@ -151,14 +153,14 @@ def submit_code(payload: SubmitCodeRequest, db: Session = Depends(get_db)) -> Su
     )
 
 @app.get("/api/problems/{problem_id}/solution", response_model=ProblemSolution, status_code=200)
-def get_last_problem(
+def get_solution(
     problem_id: ProblemId,
     db: Session = Depends(get_db),
 ) -> str:
     problem = db.get(SolvedProblems, problem_id)
     if not problem:
-        return ProblemSolution(solution="")
-    return ProblemSolution(solution=problem.solution)
+        return ProblemSolution(solution="", is_solved=False)
+    return ProblemSolution(solution=problem.solution, is_solved=problem.is_solved)
 
 @app.post("/api/help", response_model=HelpCodeResponse, status_code=200)
 def help_code(payload: HelpCodeRequest) -> HelpCodeResponse:

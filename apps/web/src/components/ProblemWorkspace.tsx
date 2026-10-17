@@ -53,6 +53,7 @@ export default function ProblemWorkspace({
     fetchSolution();
     setRunOutput("");
     setIsRunning(false);
+    setisSolved(false);
     setHelpQuestion("");
     setHelpAnswer("");
     setHelpStatus("");
@@ -79,6 +80,7 @@ export default function ProblemWorkspace({
       }
       
       data.solution === "" ? setCode(getSolveTemplate(currentProblem.id)) : setCode(data.solution);
+      setisSolved(data.is_solved);
 
   }
 

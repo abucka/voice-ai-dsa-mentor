@@ -37,6 +37,7 @@ class LastProblemResponse(BaseModel):
 
 class ProblemSolution(BaseModel):
     solution: str
+    is_solved: bool
 
 class LastProblemUpdateRequest(BaseModel):
     problemId: ProblemId
