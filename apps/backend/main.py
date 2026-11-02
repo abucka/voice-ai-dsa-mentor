@@ -165,14 +165,14 @@ def get_solution(
 @app.post("/api/help", response_model=HelpCodeResponse, status_code=200)
 def help_code(payload: HelpCodeRequest) -> HelpCodeResponse:
     answer = call_openai_tutor(payload.problemId, payload.question, payload.code, payload.mode)
-    audio_base64, audio_mime_type, voice_used = call_elevenlabs_tts(answer)
+    #audio_base64, audio_mime_type, voice_used = call_elevenlabs_tts(answer)
 
     return HelpCodeResponse(
-    problemId=payload.problemId,
-    answer=answer,
-    audioBase64=audio_base64,
-        audioMimeType=audio_mime_type,
-        voiceUsed=voice_used,
+        problemId=payload.problemId,
+        answer=answer,
+        audioBase64=None,
+        audioMimeType=None,
+        voiceUsed=None,
     )
 
 @app.post("/api/help/transcribe", response_model=TranscribeAudioResponse, status_code=200)
