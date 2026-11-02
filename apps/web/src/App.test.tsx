@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import * as authService from "./services/authService";
+import * as codeRunner from "./services/codeRunner";
 
 vi.mock("./config/appConfig", () => ({ REQUIRE_SIGNIN_PARAM: true }));
 
@@ -60,5 +61,40 @@ describe("App", () => {
     });
 
     expect(authService.signIn).toHaveBeenCalledWith("student@example.com", "secret");
+  });
+
+  it("shows the sample input used when the user runs code", async () => {
+    vi.mocked(authService.signIn).mockResolvedValue({
+      token: "demo-token",
+      email: "student@example.com",
+      lastProblemId: 1
+    });
+    vi.mocked(codeRunner.runCode).mockResolvedValue({
+      language: "python",
+      input: "[2, 7, 11, 15]",
+      expectedOutput: "[0, 1]",
+      stdout: "hello from the app\n",
+      stderr: "",
+      exitCode: 0,
+      timedOut: false
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: /start a practice session/i }));
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "student@example.com" } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "secret" } });
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /run code/i })).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /run code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/sample test input/i)).toBeTruthy();
+      expect(screen.getByText(/\[2, 7, 11, 15\]/i)).toBeTruthy();
+    });
   });
 });

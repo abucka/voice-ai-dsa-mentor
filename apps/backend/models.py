@@ -51,6 +51,8 @@ class RunCodeRequest(BaseModel):
 
 class RunCodeResponse(BaseModel):
     language: CodeLanguage
+    input: str
+    expectedOutput: str
     stdout: str
     stderr: str
     exitCode: int

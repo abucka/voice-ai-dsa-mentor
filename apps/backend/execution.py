@@ -32,6 +32,8 @@ def _limit_subprocess_resources() -> None:
 
 def execute_python_code(problem_id: ProblemId, code: str, test_row: list) -> RunCodeResponse:
     timeout_seconds = 5
+    input_text = ", ".join(repr(arg) for arg in test_arguments(test_row))
+    expected_output_value = expected_output(test_row)
 
     with tempfile.TemporaryDirectory() as temp_dir_name:
         temp_dir = Path(temp_dir_name)
@@ -53,6 +55,8 @@ def execute_python_code(problem_id: ProblemId, code: str, test_row: list) -> Run
         except subprocess.TimeoutExpired as error:
             return RunCodeResponse(
                 language="python",
+                input=input_text,
+                expectedOutput=expected_output_value,
                 stdout=(error.stdout or "")[:MAX_OUTPUT_BYTES],
                 stderr=(error.stderr or "Timed out while running Python code")[:MAX_OUTPUT_BYTES],
                 exitCode=124,
@@ -61,6 +65,8 @@ def execute_python_code(problem_id: ProblemId, code: str, test_row: list) -> Run
 
         return RunCodeResponse(
             language="python",
+            input=input_text,
+            expectedOutput=expected_output_value,
             stdout=completed.stdout[:MAX_OUTPUT_BYTES],
             stderr=completed.stderr[:MAX_OUTPUT_BYTES],
             exitCode=completed.returncode,

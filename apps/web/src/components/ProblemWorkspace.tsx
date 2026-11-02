@@ -103,14 +103,19 @@ export default function ProblemWorkspace({
     try {
       const result = await runCode(currentProblem.id, language, code);
       const outputText = [
-        `Exit code: ${result.exitCode}`,
+        //`Exit code: ${result.exitCode}`,
         result.timedOut ? "Timed out: yes" : "Timed out: no",
         "",
-        "STDOUT",
+        "Sample test input:",
+        result.input || "(empty)",
+        "",
+        "Expected output:",
+        result.expectedOutput || "(empty)",
+        "",
+        "Your output:",
         result.stdout || "(empty)",
         "",
-        "STDERR",
-        result.stderr || "(empty)"
+        result.stderr
       ].join("\n");
 
       setRunOutput(outputText);
