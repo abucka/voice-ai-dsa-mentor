@@ -3,7 +3,6 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
-#doc = fitz.open("Cracking the Coding Interview.pdf")
 
 load_dotenv()
 
