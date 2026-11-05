@@ -3,6 +3,8 @@
 Learning DSA is difficult because explanations are generic and learners often don't know why their solution is wrong.
 Voice AI DSA Mentor is an AI tutor that helps users learn data structures and algorithms through interactive coding, personalized explanations, and voice conversations.
 
+![Alt text](assets/app.png)
+
 ## What is included
 
 - apps/web: React + Vite frontend for chat and voice UX
