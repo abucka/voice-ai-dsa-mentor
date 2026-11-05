@@ -43,7 +43,7 @@ An `.env.example` file is included in the repo root:
 cp .env.example .env
 ```
 
-The current starter app can run without extra configuration, but this file is useful for upcoming AI integration settings such as `OPENAI_API_KEY` and `VITE_API_BASE_URL`.
+Enter your `OPENAI_API_KEY` and `VITE_API_BASE_URL`.
 
 ### 3. Start the project
 
@@ -96,20 +96,7 @@ Frontend:
 npm run dev:web
 ```
 
-### 6. Build the frontend
-
-```bash
-npm run build
-```
-
-### 7. Useful commands
-
-```bash
-npm run typecheck
-npm run lint
-```
-
-### 8. Run backend tests
+### 6. Run backend tests
 
 Install the extra dev dependencies (`pytest`, `httpx`) once, on top of the base requirements:
 
@@ -125,31 +112,10 @@ SQLite database, never `data/app.db`):
 python -m pytest
 ```
 
-## Suggested roadmap
+## 7. Suggested roadmap
 
-1. Add speech-to-text input streaming in web
-2. Add text-to-speech responses from server
-3. Add interview and DSA prompt templates
-4. Add coding challenge evaluator
-5. Add session persistence and analytics
+1. Add text-to-speech responses from the tutor with ElevenLabs
+2. Tests
+3. Deployment
+4. Support of other programming languages like C++
 
-## Environment variables
-
-The repo includes [.env.example](/Users/aleksandrabucka/OneDrive/projects/voice-ai-dsa-mentor/.env.example).
-
-Defined there today:
-
-- `PORT=4000`
-- `OPENAI_API_KEY=your_api_key_here`
-- `OPENAI_MODEL=gpt-4.1-mini`
-- `VITE_API_BASE_URL=http://localhost:4000`
-
-At the moment, the local dev scripts already start the backend on port `4000`, and the starter UI does not yet require an API key to render.
-
-## Backend dependency notes
-
-The backend dependency versions currently used for local startup are:
-
-- `fastapi==0.116.1`
-- `uvicorn==0.33.0`
-- `pydantic==2.10.6`
