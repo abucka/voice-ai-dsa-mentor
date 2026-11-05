@@ -63,6 +63,18 @@ def execute_python_code(problem_id: ProblemId, code: str, test_row: list) -> Run
                 timedOut=True,
             )
 
+        timed_out = completed.returncode < 0
+        if timed_out:
+            return RunCodeResponse(
+                language="python",
+                input=input_text,
+                expectedOutput=expected_output_value,
+                stdout=completed.stdout[:MAX_OUTPUT_BYTES],
+                stderr=(completed.stderr or "Timed out while running Python code")[:MAX_OUTPUT_BYTES],
+                exitCode=124,
+                timedOut=True,
+            )
+
         return RunCodeResponse(
             language="python",
             input=input_text,

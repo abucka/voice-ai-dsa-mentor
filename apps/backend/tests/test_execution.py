@@ -1,3 +1,5 @@
+import subprocess
+
 from apps.backend.execution import evaluate_submission, execute_python_code
 from apps.backend.models import ProblemId
 
@@ -72,6 +74,18 @@ def test_execute_python_code_times_out_on_an_infinite_loop():
 
     assert result.timedOut is True
     assert result.exitCode == 124
+
+
+def test_execute_python_code_marks_signal_kill_as_a_timeout(monkeypatch):
+    completed = subprocess.CompletedProcess(args=["python"], returncode=-9, stdout="", stderr="killed")
+
+    monkeypatch.setattr("apps.backend.execution.subprocess.run", lambda *args, **kwargs: completed)
+
+    result = execute_python_code(PROBLEM_ZERO, "def solve(s):\n    while True:\n        pass\n", test_row=["abcabcbb", "3"])
+
+    assert result.timedOut is True
+    assert result.exitCode == 124
+    assert "killed" in result.stderr.lower()
 
 
 def test_evaluate_submission_grades_a_correct_solution_against_all_sample_tests():
