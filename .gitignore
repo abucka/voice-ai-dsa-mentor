@@ -28,3 +28,4 @@ __pycache__/
 
 # database
 data/app.db
+data/data.json
