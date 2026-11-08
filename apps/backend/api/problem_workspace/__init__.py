@@ -1,1 +1,1 @@
-from . import endpoints
+from .endpoints import router

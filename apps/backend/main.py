@@ -34,6 +34,6 @@ def health() -> dict[str, object]:
     return {"ok": True, "service": "voice-ai-dsa-mentor-api"}
 
 
-app.include_router(ai_services.endpoints.router)
-app.include_router(problem_workspace.endpoints.router)
-app.include_router(security.endpoints.router)
+app.include_router(ai_services.router)
+app.include_router(problem_workspace.router)
+app.include_router(security.router)
