@@ -11,9 +11,6 @@ class HelpCodeRequest(BaseModel):
 class HelpCodeResponse(BaseModel):
     problemId: ProblemId
     answer: str
-    audioBase64: str | None = None
-    audioMimeType: str | None = None
-    voiceUsed: str | None = None
 
 class TranscribeAudioRequest(BaseModel):
     audioBase64: str = Field(min_length=1)
@@ -21,3 +18,10 @@ class TranscribeAudioRequest(BaseModel):
 
 class TranscribeAudioResponse(BaseModel):
     text: str
+
+class SynthesizeAudioRequest(BaseModel):
+    text: str
+
+class SynthesizeAudioResponse(BaseModel):
+    audioBase64: str | None = None
+    audioMimeType: str | None = None

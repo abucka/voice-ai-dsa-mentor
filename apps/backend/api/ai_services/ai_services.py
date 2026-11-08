@@ -1,32 +1,20 @@
 import base64
 import io
-import json
 import os
-from urllib import error as urllib_error
-from urllib import request as urllib_request
-from urllib.parse import quote
-from uuid import uuid4
 
 from fastapi import HTTPException
 from openai import OpenAI
 
+from elevenlabs.client import ElevenLabs
+
 from ...models import ProblemId
 from ..problem_workspace.problem_data import get_problem_summary
 
-OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
-OPENAI_TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions"
-ELEVENLABS_TTS_URL_TEMPLATE = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
 SYSTEM_TUTOR_PROMPT = (
     "You are a concise DSA tutor. Help the learner solve the problem without giving away the full solution. "
     "Focus on debugging hints, algorithm direction, and why their current code may fail. "
     "Keep the answer under 180 words and avoid code unless it is a tiny illustrative snippet."
 )
-
-
-def build_request(url: str, body: bytes | None, headers: dict[str, str], method: str = "POST") -> urllib_request.Request:
-    return urllib_request.Request(url, data=body, headers=headers, method=method)
-
-
 
 def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mentor_mode: str = "explain") -> str:
     api_key = os.environ.get("OPENAI_API_KEY")
@@ -67,43 +55,26 @@ def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mentor_mo
     return content.strip()
 
 
-def call_elevenlabs_tts(answer: str) -> tuple[str | None, str | None, str | None]:
+def call_elevenlabs_tts(text: str) -> tuple[str | None, str | None, str | None]:
     api_key = os.environ.get("ELEVENLABS_API_KEY")
     voice_id = os.environ.get("ELEVENLABS_VOICE_ID")
+    
 
     if not api_key or not voice_id:
         return None, None, None
 
-    payload = {
-        "text": answer,
-        "model_id": os.environ.get("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2"),
-        "voice_settings": {
-            "stability": 0.35,
-            "similarity_boost": 0.75,
-            "style": 0.2,
-            "use_speaker_boost": True,
-        },
-    }
-
-    request = build_request(
-        ELEVENLABS_TTS_URL_TEMPLATE.format(voice_id=quote(voice_id)),
-        json.dumps(payload).encode("utf-8"),
-        {
-            "xi-api-key": api_key,
-            "Content-Type": "application/json",
-            "Accept": "audio/mpeg",
-        },
-    )
-
     try:
-        with urllib_request.urlopen(request, timeout=30) as response:
-            audio_bytes = response.read()
-    except urllib_error.HTTPError as exc:
-        raise HTTPException(status_code=500, detail=f"ElevenLabs request failed: {exc.read().decode('utf-8', errors='ignore')}") from exc
-    except urllib_error.URLError as exc:
-        raise HTTPException(status_code=500, detail=f"ElevenLabs request failed: {exc.reason}") from exc
-
-    return base64.b64encode(audio_bytes).decode("utf-8"), "audio/mpeg", voice_id
+        client = ElevenLabs(api_key=api_key)
+        audio = client.text_to_speech.convert(
+            voice_id=voice_id,
+            model_id=os.environ.get("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2"),
+            text=text,
+            output_format="mp3_44100_128",
+        )
+        audio_bytes = b"".join(chunk for chunk in audio)
+        return base64.b64encode(audio_bytes).decode("utf-8"), "audio/mpeg"
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"ElevenLabs request failed: {exc}") from exc
 
 
 def transcribe_audio_with_openai(audio_base64: str, mime_type: str) -> str:
