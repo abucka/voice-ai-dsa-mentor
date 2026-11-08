@@ -107,3 +107,33 @@ def test_submit_code_reports_a_runtime_error_reason(client):
     body = response.json()
     assert body["passed"] is False
     assert all(result["reason"] == "Runtime error" for result in body["results"])
+
+
+def test_call_openai_tutor_uses_openai_client(monkeypatch):
+    from types import SimpleNamespace
+
+    import apps.backend.api.ai_services.ai_services as ai_services
+
+    class FakeResponse:
+        class Choice:
+            def __init__(self):
+                self.message = SimpleNamespace(content="Helpful hint")
+
+        choices = [Choice()]
+
+    class FakeOpenAI:
+        def __init__(self, api_key):
+            self.api_key = api_key
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
+
+        def _create(self, **kwargs):
+            assert kwargs["model"] == "gpt-4.1-mini"
+            assert kwargs["messages"][1]["role"] == "user"
+            return FakeResponse()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(ai_services, "OpenAI", FakeOpenAI, raising=False)
+
+    answer = ai_services.call_openai_tutor(0, "Why is my code wrong?", "print(1)", "explain")
+
+    assert answer == "Helpful hint"

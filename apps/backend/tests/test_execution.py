@@ -79,7 +79,7 @@ def test_execute_python_code_times_out_on_an_infinite_loop():
 def test_execute_python_code_marks_signal_kill_as_a_timeout(monkeypatch):
     completed = subprocess.CompletedProcess(args=["python"], returncode=-9, stdout="", stderr="killed")
 
-    monkeypatch.setattr("apps.backend.execution.subprocess.run", lambda *args, **kwargs: completed)
+    monkeypatch.setattr("apps.backend.api.problem_workspace.execution.subprocess.run", lambda *args, **kwargs: completed)
 
     result = execute_python_code(PROBLEM_ZERO, "def solve(s):\n    while True:\n        pass\n", test_row=["abcabcbb", "3"])
 
