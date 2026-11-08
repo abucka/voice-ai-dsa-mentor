@@ -44,7 +44,7 @@ export default function TutorHelpPanel({ code, problemId }: TutorHelpPanelProps)
     setTutorMessages((previous) => [...previous, { role: "user", content: trimmedQuestion }]);
 
     try {
-      const result = await askTutor(problemId, "python", code, trimmedQuestion, "explain");
+      const result = await askTutor(problemId, "python", code, trimmedQuestion);
       setTutorMessages((previous) => [...previous, { role: "assistant", content: result.answer }]);
       setHelpAnswer(result.answer);
       setHelpStatus("Tutor answered.");

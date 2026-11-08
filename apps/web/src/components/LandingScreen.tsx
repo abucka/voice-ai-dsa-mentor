@@ -6,7 +6,7 @@ export default function LandingScreen({ onStartLearning }: LandingScreenProps) {
   return (
     <section className="panel hero">
       <p className="eyebrow">Voice AI DSA Mentor</p>
-      <h1>Train for interviews with an AI pair mentor.</h1>
+      <h1>Train for interviews with an AI mentor.</h1>
       <p className="lead">
         Build momentum in focused daily sessions with instant code feedback, voice help, and guided problem solving.
       </p>
