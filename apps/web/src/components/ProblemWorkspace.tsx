@@ -3,6 +3,7 @@ import CodeEditorPanel from "./CodeEditorPanel";
 import TutorHelpPanel from "./TutorHelpPanel";
 import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
 import { DsaProblem } from "../types";
+import { PROBLEMS } from "../constants/problems";
 import { runCode } from "../services/codeRunner";
 import { submitCode } from "../services/codeSubmitter";
 
@@ -14,8 +15,7 @@ type ProblemWorkspaceProps = {
   currentProblemIndex: number;
   totalProblems: number;
   isSavingProgress: boolean;
-  onPreviousProblem: () => Promise<void>;
-  onNextProblem: () => Promise<void>;
+  onProblemChange: (problemId: DsaProblem["id"]) => Promise<void>;
   onSignOut: () => void;
 };
 
@@ -25,8 +25,7 @@ export default function ProblemWorkspace({
   currentProblemIndex,
   totalProblems,
   isSavingProgress,
-  onPreviousProblem,
-  onNextProblem,
+  onProblemChange,
   onSignOut
 }: ProblemWorkspaceProps) {
   const [code, setCode] = useState<string>("");
@@ -39,6 +38,18 @@ export default function ProblemWorkspace({
   const language = "python" as const;
   const filename = CODE_LANGUAGES[0]?.filename ?? "main.py";
   const progressPercent = Math.min(100, Math.max(0, (currentProblemIndex / totalProblems) * 100));
+
+  async function handlePreviousProblem() {
+    const index = PROBLEMS.findIndex((problem) => problem.id === currentProblem.id);
+    const previous = PROBLEMS[(index - 1 + PROBLEMS.length) % PROBLEMS.length];
+    await onProblemChange(previous.id);
+  }
+
+  async function handleNextProblem() {
+    const index = PROBLEMS.findIndex((problem) => problem.id === currentProblem.id);
+    const next = PROBLEMS[(index + 1) % PROBLEMS.length];
+    await onProblemChange(next.id);
+  }
 
   useEffect(() => {
     fetchSolution();
@@ -150,10 +161,10 @@ export default function ProblemWorkspace({
           <h2>Practice workspace</h2>
         </div>
         <div className="workspaceHeaderActions">
-          <button type="button" className="ghost" onClick={onPreviousProblem}>
+          <button type="button" className="ghost" onClick={() => void handlePreviousProblem()}>
             Previous problem
           </button>
-          <button type="button" className="ghost" onClick={onNextProblem}>
+          <button type="button" className="ghost" onClick={() => void handleNextProblem()}>
             Next problem
           </button>
           <button type="button" className="ghost" onClick={onSignOut}>

@@ -78,16 +78,8 @@ export default function App() {
     }
   }
 
-  async function goToNextProblem() {
-    const index = PROBLEMS.findIndex((problem) => problem.id === currentProblem.id);
-    const next = PROBLEMS[(index + 1) % PROBLEMS.length];
-    await saveProgress(next.id);
-  }
-
-  async function goToPreviousProblem() {
-    const index = PROBLEMS.findIndex((problem) => problem.id === currentProblem.id);
-    const previous = PROBLEMS[(index - 1 + PROBLEMS.length) % PROBLEMS.length];
-    await saveProgress(previous.id);
+  async function handleProblemChange(problemId: DsaProblem["id"]) {
+    await saveProgress(problemId);
   }
 
   return (
@@ -114,8 +106,7 @@ export default function App() {
           currentProblemIndex={currentProblemIndex}
           totalProblems={PROBLEMS.length}
           isSavingProgress={isSavingProgress}
-          onPreviousProblem={goToPreviousProblem}
-          onNextProblem={goToNextProblem}
+          onProblemChange={handleProblemChange}
           onSignOut={() => {
             setAuthToken("");
             setSignedInEmail("");
