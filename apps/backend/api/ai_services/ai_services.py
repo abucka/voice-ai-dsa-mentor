@@ -8,8 +8,8 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from .models import MentorMode, ProblemId
-from .problem_data import get_problem_summary
+from ...models import ProblemId
+from ..problem_workspace.problem_data import get_problem_summary
 
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions"
@@ -29,7 +29,7 @@ def read_json_response(response: object) -> dict[str, object]:
     return json.loads(response.read().decode("utf-8"))
 
 
-def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mode: MentorMode) -> str:
+def call_openai_tutor(problem_id: ProblemId, question: str, code: str) -> str:
     api_key = os.environ.get("OPENAI_API_KEY")
     model = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 
@@ -39,7 +39,7 @@ def call_openai_tutor(problem_id: ProblemId, question: str, code: str, mode: Men
     user_prompt = (
         f"Problem: {problem_id}\n"
         f"Summary: {get_problem_summary(problem_id)}\n"
-        f"Mentor mode: {mode}\n"
+        f"Mentor mode: {"explain"}\n"
         f"Learner question: {question}\n"
         f"Current code:\n{code}\n"
     )

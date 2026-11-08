@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from .db_models import AuthToken, User
+from ...db_models import AuthToken, User
 
 load_dotenv()
 

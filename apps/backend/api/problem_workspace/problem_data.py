@@ -1,6 +1,6 @@
-from .models import ProblemId
+from ...models import ProblemId
 import json
-from .db_models import SolvedProblems
+from ...db_models import SolvedProblems
 from sqlalchemy.orm import Session
 
 # Open the file and parse the JSON data into a dictionary

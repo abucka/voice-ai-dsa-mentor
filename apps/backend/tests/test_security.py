@@ -1,4 +1,4 @@
-from apps.backend.security import hash_password, verify_password
+from apps.backend.api.security.security import hash_password, verify_password
 
 
 def test_hash_password_produces_salt_dollar_digest_format():

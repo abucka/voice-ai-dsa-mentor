@@ -3,7 +3,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from .models import CodeLanguage, ProblemId, RunCodeResponse, SubmitTestResult
+from ...models import CodeLanguage, ProblemId
+from .models import RunCodeResponse, SubmitTestResult
 from .problem_data import SUBMISSION_TESTS, build_python_harness, expected_output, normalize_output, test_arguments
 
 # Untrusted user code runs as a plain subprocess, not inside a container/VM. This is NOT a

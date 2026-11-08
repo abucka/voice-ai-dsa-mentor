@@ -13,7 +13,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite://")
 import pytest
 from fastapi.testclient import TestClient
 
-from apps.backend.database import Base, engine
+from ..database import Base, engine
 from apps.backend.main import app
 
 

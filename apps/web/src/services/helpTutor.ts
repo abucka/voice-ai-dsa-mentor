@@ -1,4 +1,4 @@
-import { DsaProblem, HelpTutorResponse, MentorMode } from "../types";
+import { DsaProblem, HelpTutorResponse } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
@@ -7,12 +7,11 @@ export async function askTutor(
   language: "python",
   code: string,
   question: string,
-  mode: MentorMode
 ): Promise<HelpTutorResponse> {
   const response = await fetch(`${API_BASE_URL}/api/help`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ problemId, language, code, question, mode })
+    body: JSON.stringify({ problemId, language, code, question })
   });
 
   if (!response.ok) {

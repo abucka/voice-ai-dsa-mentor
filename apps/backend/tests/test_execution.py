@@ -1,6 +1,6 @@
 import subprocess
 
-from apps.backend.execution import evaluate_submission, execute_python_code
+from apps.backend.api.problem_workspace.execution import evaluate_submission, execute_python_code
 from apps.backend.models import ProblemId
 
 PROBLEM_ZERO = ProblemId(0)  # "Longest Substring Without Repeating Characters"
