@@ -68,11 +68,6 @@ def get_last_problem(
     user = require_authenticated_user(authorization, db)
     return LastProblemResponse(email=user.email, lastProblemId=ProblemId(user.last_problem_id))
 
-#@router.patch("/problems/{problem_id}")
-#def update_problem(problem_id: int):
-#    _update_problem_solution(db, payload.problemId, payload.code)
-#    return {"message": "Updated successfully"}
-
 @router.patch("/api/users/me/last-problem", response_model=LastProblemResponse, status_code=200)
 def update_last_problem(
     payload: LastProblemUpdateRequest,

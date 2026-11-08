@@ -14,7 +14,6 @@ type ProblemWorkspaceProps = {
   currentProblem: DsaProblem;
   currentProblemIndex: number;
   totalProblems: number;
-  isSavingProgress: boolean;
   onProblemChange: (problemId: DsaProblem["id"]) => Promise<void>;
   onSignOut: () => void;
 };
@@ -24,7 +23,6 @@ export default function ProblemWorkspace({
   currentProblem,
   currentProblemIndex,
   totalProblems,
-  isSavingProgress,
   onProblemChange,
   onSignOut
 }: ProblemWorkspaceProps) {

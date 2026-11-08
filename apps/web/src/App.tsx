@@ -16,7 +16,6 @@ export default function App() {
   const [authToken, setAuthToken] = useState("");
   const [error, setError] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [lastProblemId, setLastProblemId] = useState<number>(getInitialProblemId);
 
   const currentProblem = useMemo(
@@ -67,15 +66,12 @@ export default function App() {
 
     if (!authToken) return;
 
-    setIsSavingProgress(true);
     try {
       const data = await persistLastProblem(authToken, problemId);
       saveProgressLocal(data.lastProblemId);
     } catch {
       setError("Signed in, but saving progress failed. We kept progress locally.");
-    } finally {
-      setIsSavingProgress(false);
-    }
+    } 
   }
 
   async function handleProblemChange(problemId: DsaProblem["id"]) {
@@ -105,7 +101,6 @@ export default function App() {
           currentProblem={currentProblem}
           currentProblemIndex={currentProblemIndex}
           totalProblems={PROBLEMS.length}
-          isSavingProgress={isSavingProgress}
           onProblemChange={handleProblemChange}
           onSignOut={() => {
             setAuthToken("");
