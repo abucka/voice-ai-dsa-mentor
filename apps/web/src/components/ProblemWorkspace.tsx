@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import CodeEditorPanel from "./CodeEditorPanel";
+import TutorHelpPanel from "./TutorHelpPanel";
 import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
 import { DsaProblem } from "../types";
 import { runCode } from "../services/codeRunner";
-import { askTutor } from "../services/helpTutor";
-import { transcribeVoice } from "../services/voiceTranscriber";
 import { submitCode } from "../services/codeSubmitter";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
@@ -33,17 +32,9 @@ export default function ProblemWorkspace({
   const [code, setCode] = useState<string>("");
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
-  const [helpQuestion, setHelpQuestion] = useState("");
-  const [helpAnswer, setHelpAnswer] = useState("");
-  const [helpStatus, setHelpStatus] = useState("");
-  const [isAskingHelp, setIsAskingHelp] = useState(false);
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [isSolved, setisSolved] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const audioChunksRef = useRef<BlobPart[]>([]);
 
   const language = "python" as const;
   const filename = CODE_LANGUAGES[0]?.filename ?? "main.py";
@@ -54,17 +45,8 @@ export default function ProblemWorkspace({
     setRunOutput("");
     setIsRunning(false);
     setisSolved(false);
-    setHelpQuestion("");
-    setHelpAnswer("");
-    setHelpStatus("");
-    setIsAskingHelp(false);
-    setIsRecordingVoice(false);
     setSubmitOutput("");
     setIsSubmitting(false);
-    mediaRecorderRef.current = null;
-    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
-    mediaStreamRef.current = null;
-    audioChunksRef.current = [];
   }, [currentProblem.id]);
 
   async function fetchSolution() {
@@ -124,96 +106,6 @@ export default function ProblemWorkspace({
     } finally {
       setIsRunning(false);
     }
-  }
-
-  async function handleAskTutor(questionOverride?: string) {
-    const trimmedQuestion = (questionOverride ?? helpQuestion).trim();
-    if (!trimmedQuestion) {
-      setHelpStatus("Please type a question for the tutor.");
-      return;
-    }
-
-    setIsAskingHelp(true);
-    setHelpStatus("Asking the tutor...");
-    setHelpAnswer("");
-
-    try {
-      const result = await askTutor(currentProblem.id, language, code, trimmedQuestion, "explain");
-      setHelpAnswer(result.answer);
-      setHelpStatus("Tutor answered.");
-    } catch (error) {
-      setHelpStatus(error instanceof Error ? error.message : "Unable to get tutor help.");
-    } finally {
-      setIsAskingHelp(false);
-    }
-  }
-
-  async function startVoiceHelp() {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setHelpStatus("Your browser does not support microphone recording.");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      mediaStreamRef.current = stream;
-      audioChunksRef.current = [];
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onstop = async () => {
-        try {
-          const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
-          const audioBase64 = await blobToBase64(blob);
-          setHelpStatus("Transcribing your voice question...");
-          const transcript = await transcribeVoice(audioBase64, blob.type || "audio/webm");
-          setHelpQuestion(transcript);
-          await handleAskTutor(transcript);
-        } catch (error) {
-          setHelpStatus(error instanceof Error ? error.message : "Unable to transcribe your voice question.");
-        } finally {
-          setIsRecordingVoice(false);
-          stream.getTracks().forEach((track) => track.stop());
-          mediaRecorderRef.current = null;
-          mediaStreamRef.current = null;
-          audioChunksRef.current = [];
-        }
-      };
-
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsRecordingVoice(true);
-      setHelpStatus("Recording... click stop when finished.");
-    } catch (error) {
-      setHelpStatus(error instanceof Error ? error.message : "Unable to access the microphone.");
-    }
-  }
-
-  function stopVoiceHelp() {
-    mediaRecorderRef.current?.stop();
-  }
-
-  function blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result;
-        if (typeof result !== "string") {
-          reject(new Error("Unable to read recorded audio."));
-          return;
-        }
-
-        const base64 = result.split(",")[1] ?? "";
-        resolve(base64);
-      };
-      reader.onerror = () => reject(new Error("Unable to read recorded audio."));
-      reader.readAsDataURL(blob);
-    });
   }
 
   async function handleSubmitCode() {
@@ -321,50 +213,7 @@ export default function ProblemWorkspace({
           </div>
 
           <div className="workspaceSecondaryColumn">
-            <section className="helpPanel">
-              <div className="helpHeaderRow">
-                <p className="editorLabel">AI Tutor Coach</p>
-                <div className="helpButtonGroup">
-                  <button type="button" className="ghost helpButton" onClick={() => void handleAskTutor()} disabled={isAskingHelp || isRecordingVoice}>
-                    {isAskingHelp ? "Asking..." : "Help"}
-                  </button>
-                  <button
-                    type="button"
-                    className="ghost helpButton"
-                    onClick={() => {
-                      if (isRecordingVoice) {
-                        stopVoiceHelp();
-                        return;
-                      }
-
-                      void startVoiceHelp();
-                    }}
-                    disabled={isAskingHelp}
-                  >
-                    {isRecordingVoice ? "Stop Voice" : "Ask by Voice"}
-                  </button>
-                </div>
-              </div>
-
-              <label htmlFor="helpQuestion" className="srOnly">
-                Ask the AI tutor for help
-              </label>
-              <textarea
-                id="helpQuestion"
-                className="helpTextarea"
-                value={helpQuestion}
-                onChange={(event) => setHelpQuestion(event.target.value)}
-                placeholder="What part are you stuck on?"
-                rows={4}
-              />
-              <p className="statusRow">{helpStatus || "Ask a question and the tutor will reply here."}</p>
-              {helpAnswer && (
-                <div className="helpAnswerBox">
-                  <p className="editorLabel">Tutor response</p>
-                  <pre className="outputBox tutorAnswerBox">{helpAnswer}</pre>
-                </div>
-              )}
-            </section>
+            <TutorHelpPanel code={code} problemId={currentProblem.id} />
           </div>
         </div>
 
