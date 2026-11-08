@@ -1,0 +1,1000 @@
+{
+  "exercises": [
+  {
+    "title": "Longest Substring Without Repeating Characters",
+    "exercise": "Given a string, find the length of the longest substring without repeating characters.",
+    "difficulty": "Medium",
+    "tests": [
+      ["abcabcbb", "3"],
+      ["bbbbb", "1"],
+      ["pwwkew", "3"]
+    ],
+    "template": [
+      "def solve(s):",
+      "    # Return the length of the longest substring without repeating characters.",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve('abcabcbb')"
+  },
+  {
+    "title": "Two Sum",
+    "exercise": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
+    "difficulty": "Easy",
+    "tests": [
+      [[2,7,11,15], 9, "[0,1]"],
+      [[3,2,4], 6, "[1,2]"],
+      [[3,3], 6, "[0,1]"]
+    ],
+    "template": [
+      "def solve(nums, target):",
+      "    # Return indices of two numbers such that they add to target",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([2,7,11,15], 9)"
+  },
+  {
+    "title": "Move Zeroes",
+    "exercise": "Given an array nums, write a function to move all 0's to the end while maintaining the relative order of the non-zero elements.",
+    "difficulty": "Easy",
+    "tests": [
+      [[0,1,0,3,12], "[1,3,12,0,0]"],
+      [[0], "[0]"],
+      [[4,2,4,0,0,3,0,5,1,0], "[4,2,4,3,5,1,0,0,0,0]"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return array after moving zeroes to end",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([0,1,0,3,12])"
+  },
+  {
+    "title": "Valid Parentheses",
+    "exercise": "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
+    "difficulty": "Easy",
+    "tests": [
+      ["()", "True"],
+      ["()[]{}", "True"],
+      ["(]", "False"]
+    ],
+    "template": [
+      "def solve(s):",
+      "    # Return True if string s has valid parentheses, else False",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve('()[]{}')"
+  },
+  {
+    "title": "Merge Two Sorted Lists",
+    "exercise": "Merge two sorted linked lists and return it as a sorted list. The list should be made by splicing together the nodes of the first two lists.",
+    "difficulty": "Easy",
+    "tests": [
+      ["[1,2,4]", "[1,3,4]", "[1,1,2,3,4,4]"],
+      ["[]", "[]", "[]"],
+      ["[]", "[0]", "[0]"]
+    ],
+    "template": [
+      "class ListNode:",
+      "    def __init__(self, val=0, next=None):",
+      "        self.val = val",
+      "        self.next = next",
+      "",
+      "def solve(l1, l2):",
+      "    # Merge two sorted linked lists l1 and l2",
+      "    # Your code here",
+      "    return None"
+    ],
+    "execution": "result = solve(l1_head, l2_head)"
+  },
+  {
+    "title": "Maximum Subarray",
+    "exercise": "Given an integer array nums, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.",
+    "difficulty": "Medium",
+    "tests": [
+      [[-2,1,-3,4,-1,2,1,-5,4], "6"],
+      [[1], "1"],
+      [[5,4,-1,7,8], "23"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return the largest sum of contiguous subarray",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve([-2,1,-3,4,-1,2,1,-5,4])"
+  },
+  {
+    "title": "Climbing Stairs",
+    "exercise": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?",
+    "difficulty": "Easy",
+    "tests": [
+      [2, "2"],
+      [3, "3"],
+      [1, "1"]
+    ],
+    "template": [
+      "def solve(n):",
+      "    # Return number of distinct ways to climb n steps",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve(3)"
+  },
+  {
+    "title": "Invert Binary Tree",
+    "exercise": "Invert a binary tree.",
+    "difficulty": "Easy",
+    "tests": [
+      ["[4,2,7,1,3,6,9]", "[4,7,2,9,6,3,1]"],
+      ["[]", "[]"],
+      ["[2,1,3]", "[2,3,1]"]
+    ],
+    "template": [
+      "class TreeNode:",
+      "    def __init__(self, val=0, left=None, right=None):",
+      "        self.val = val",
+      "        self.left = left",
+      "        self.right = right",
+      "",
+      "def solve(root):",
+      "    # Invert binary tree rooted at root",
+      "    # Your code here",
+      "    return root"
+    ],
+    "execution": "result = solve(root)"
+  },
+  {
+    "title": "Binary Search",
+    "exercise": "Given a sorted array of integers nums and an integer target, return the index if the target is found. If not, return -1.",
+    "difficulty": "Easy",
+    "tests": [
+      [[-1,0,3,5,9,12], 9, "4"],
+      [[-1,0,3,5,9,12], 2, "-1"],
+      [[], 5, "-1"]
+    ],
+    "template": [
+      "def solve(nums, target):",
+      "    # Return index of target in nums or -1 if not found",
+      "    # Your code here",
+      "    return -1"
+    ],
+    "execution": "result = solve([ -1, 0, 3, 5, 9, 12], 9)"
+  },
+  {
+    "title": "Valid Anagram",
+    "exercise": "Given two strings s and t, return true if t is an anagram of s, and false otherwise.",
+    "difficulty": "Easy",
+    "tests": [
+      ["anagram", "nagaram", "True"],
+      ["rat", "car", "False"],
+      ["", "", "True"]
+    ],
+    "template": [
+      "def solve(s, t):",
+      "    # Return True if t is an anagram of s",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve('anagram', 'nagaram')"
+  },
+  {
+    "title": "Find the Duplicate Number",
+    "exercise": "Given an array nums containing n + 1 integers where each integer is between 1 and n (inclusive), prove that at least one duplicate number must exist. Find the duplicate one.",
+    "difficulty": "Medium",
+    "tests": [
+      [[1,3,4,2,2], "2"],
+      [[3,1,3,4,2], "3"],
+      [[1,1], "1"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Find duplicate number in list",
+      "    # Your code here",
+      "    return -1"
+    ],
+    "execution": "result = solve([1,3,4,2,2])"
+  },
+  {
+    "title": "Implement Queue using Stacks",
+    "exercise": "Implement a first in first out (FIFO) queue using only two stacks.",
+    "difficulty": "Medium",
+    "tests": [
+      ["push 1", "push 2", "peek -> 1", "pop -> 1", "empty -> False"],
+      ["empty -> True"],
+      ["push 3", "pop -> 3", "empty -> True"]
+    ],
+    "template": [
+      "class MyQueue:",
+      "    def __init__(self):",
+      "        # Initialize data structure",
+      "        pass",
+      "    def push(self, x):",
+      "        # Push element x to the back of queue",
+      "        pass",
+      "    def pop(self):",
+      "        # Removes the element from in front of queue and returns that element",
+      "        pass",
+      "    def peek(self):",
+      "        # Get the front element",
+      "        pass",
+      "    def empty(self):",
+      "        # Return whether the queue is empty",
+      "        pass"
+    ],
+    "execution": "q = MyQueue(); q.push(1); q.push(2); front = q.peek()"
+  },
+  {
+    "title": "Find Minimum in Rotated Sorted Array",
+    "exercise": "Suppose an array sorted in ascending order is rotated at some pivot. Find the minimum element.",
+    "difficulty": "Medium",
+    "tests": [
+      [[3,4,5,1,2], "1"],
+      [[4,5,6,7,0,1,2], "0"],
+      [[11,13,15,17], "11"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return minimum in rotated sorted array",
+      "    # Your code here",
+      "    return -1"
+    ],
+    "execution": "result = solve([3,4,5,1,2])"
+  },
+  {
+    "title": "Symmetric Tree",
+    "exercise": "Given a binary tree, check whether it is a mirror of itself (symmetric around its center).",
+    "difficulty": "Easy",
+    "tests": [
+      ["[1,2,2,3,4,4,3]", "True"],
+      ["[1,2,2,null,3,null,3]", "False"],
+      ["[]", "True"]
+    ],
+    "template": [
+      "class TreeNode:",
+      "    def __init__(self, val=0, left=None, right=None):",
+      "        self.val = val",
+      "        self.left = left",
+      "        self.right = right",
+      "",
+      "def solve(root):",
+      "    # Return True if tree is symmetric",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve(root)"
+  },
+  {
+    "title": "Intersection of Two Arrays II",
+    "exercise": "Given two arrays, compute their intersection, including duplicate elements.",
+    "difficulty": "Easy",
+    "tests": [
+      [[1,2,2,1], [2,2], "[2,2]"],
+      [[4,9,5], [9,4,9,8,4], "[4,9]"],
+      [[], [1], "[]"]
+    ],
+    "template": [
+      "def solve(nums1, nums2):",
+      "    # Return intersection including duplicates",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([1,2,2,1], [2,2])"
+  },
+  {
+    "title": "Reverse Integer",
+    "exercise": "Given a signed 32-bit integer x, return x with its digits reversed. Assume the reversed value fits in a 32-bit signed integer.",
+    "difficulty": "Medium",
+    "tests": [
+      [123, "321"],
+      [-123, "-321"],
+      [120, "21"]
+    ],
+    "template": [
+      "def solve(x):",
+      "    # Return x with its digits reversed",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve(123)"
+  },
+  {
+    "title": "Palindrome Number",
+    "exercise": "Given an integer x, return True if x is a palindrome, and False otherwise.",
+    "difficulty": "Easy",
+    "tests": [
+      [121, "True"],
+      [-121, "False"],
+      [10, "False"]
+    ],
+    "template": [
+      "def solve(x):",
+      "    # Return True if x reads the same backward as forward",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve(121)"
+  },
+  {
+    "title": "Roman to Integer",
+    "exercise": "Given a roman numeral, convert it to an integer.",
+    "difficulty": "Easy",
+    "tests": [
+      ["III", "3"],
+      ["LVIII", "58"],
+      ["MCMXCIV", "1994"]
+    ],
+    "template": [
+      "def solve(s):",
+      "    # Return the integer value of roman numeral s",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve('LVIII')"
+  },
+  {
+    "title": "Integer to Roman",
+    "exercise": "Given an integer, convert it to a roman numeral.",
+    "difficulty": "Medium",
+    "tests": [
+      [3, "III"],
+      [58, "LVIII"],
+      [1994, "MCMXCIV"]
+    ],
+    "template": [
+      "def solve(num):",
+      "    # Return the roman numeral representation of num",
+      "    # Your code here",
+      "    return ''"
+    ],
+    "execution": "result = solve(58)"
+  },
+  {
+    "title": "Remove Duplicates from Sorted Array",
+    "exercise": "Given a sorted array nums, return a new array containing only the unique elements in the same order.",
+    "difficulty": "Easy",
+    "tests": [
+      [[1,1,2], "[1,2]"],
+      [[0,0,1,1,1,2,2,3,3,4], "[0,1,2,3,4]"],
+      [[1,2,3], "[1,2,3]"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return list of unique elements from sorted nums",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([1,1,2])"
+  },
+  {
+    "title": "Search Insert Position",
+    "exercise": "Given a sorted array of distinct integers nums and a target value, return the index if the target is found. If not, return the index where it would be if it were inserted in order.",
+    "difficulty": "Easy",
+    "tests": [
+      [[1,3,5,6], 5, "2"],
+      [[1,3,5,6], 2, "1"],
+      [[1,3,5,6], 7, "4"]
+    ],
+    "template": [
+      "def solve(nums, target):",
+      "    # Return index of target, or insertion index if not present",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve([1,3,5,6], 5)"
+  },
+  {
+    "title": "Length of Last Word",
+    "exercise": "Given a string s consisting of words and spaces, return the length of the last word in the string.",
+    "difficulty": "Easy",
+    "tests": [
+      ["Hello World", "5"],
+      ["   fly me   to   the moon  ", "4"],
+      ["luffy is still joyboy", "6"]
+    ],
+    "template": [
+      "def solve(s):",
+      "    # Return the length of the last word in s",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve('Hello World')"
+  },
+  {
+    "title": "Plus One",
+    "exercise": "Given a large integer represented as an array of digits, increment the integer by one and return the resulting array of digits.",
+    "difficulty": "Easy",
+    "tests": [
+      [[1,2,3], "[1,2,4]"],
+      [[4,3,2,1], "[4,3,2,2]"],
+      [[9], "[1,0]"]
+    ],
+    "template": [
+      "def solve(digits):",
+      "    # Return digits incremented by one",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([1,2,3])"
+  },
+  {
+    "title": "Sqrt(x)",
+    "exercise": "Given a non-negative integer x, return the square root of x rounded down to the nearest integer.",
+    "difficulty": "Easy",
+    "tests": [
+      [4, "2"],
+      [8, "2"],
+      [0, "0"]
+    ],
+    "template": [
+      "def solve(x):",
+      "    # Return floor(sqrt(x))",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve(8)"
+  },
+  {
+    "title": "Merge Sorted Array",
+    "exercise": "Given two sorted integer arrays, return a single array containing all the elements of both, in sorted order.",
+    "difficulty": "Easy",
+    "tests": [
+      [[1,2,3], [2,5,6], "[1,2,2,3,5,6]"],
+      [[1], [], "[1]"],
+      [[], [1], "[1]"]
+    ],
+    "template": [
+      "def solve(nums1, nums2):",
+      "    # Return the sorted merge of nums1 and nums2",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([1,2,3], [2,5,6])"
+  },
+  {
+    "title": "Pascal's Triangle Row",
+    "exercise": "Given an integer rowIndex, return the rowIndex-th (0-indexed) row of Pascal's triangle.",
+    "difficulty": "Easy",
+    "tests": [
+      [3, "[1,3,3,1]"],
+      [0, "[1]"],
+      [1, "[1,1]"]
+    ],
+    "template": [
+      "def solve(rowIndex):",
+      "    # Return the rowIndex-th row of Pascal's triangle",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve(3)"
+  },
+  {
+    "title": "Best Time to Buy and Sell Stock",
+    "exercise": "Given an array prices where prices[i] is the price of a stock on day i, return the maximum profit from buying on one day and selling on a later day. Return 0 if no profit is possible.",
+    "difficulty": "Easy",
+    "tests": [
+      [[7,1,5,3,6,4], "5"],
+      [[7,6,4,3,1], "0"],
+      [[1,2], "1"]
+    ],
+    "template": [
+      "def solve(prices):",
+      "    # Return max profit from a single buy/sell",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve([7,1,5,3,6,4])"
+  },
+  {
+    "title": "Single Number",
+    "exercise": "Given a non-empty array of integers where every element appears twice except for one, find that single one.",
+    "difficulty": "Easy",
+    "tests": [
+      [[2,2,1], "1"],
+      [[4,1,2,1,2], "4"],
+      [[1], "1"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return the element that appears only once",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve([4,1,2,1,2])"
+  },
+  {
+    "title": "Majority Element",
+    "exercise": "Given an array nums of size n, return the majority element (the element that appears more than n/2 times).",
+    "difficulty": "Easy",
+    "tests": [
+      [[3,2,3], "3"],
+      [[2,2,1,1,1,2,2], "2"],
+      [[1], "1"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return the majority element",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve([2,2,1,1,1,2,2])"
+  },
+  {
+    "title": "Excel Sheet Column Number",
+    "exercise": "Given a string columnTitle that represents the column title as it appears in an Excel sheet, return its corresponding column number.",
+    "difficulty": "Easy",
+    "tests": [
+      ["A", "1"],
+      ["AB", "28"],
+      ["ZY", "701"]
+    ],
+    "template": [
+      "def solve(columnTitle):",
+      "    # Return the Excel column number for columnTitle",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve('AB')"
+  },
+  {
+    "title": "Factorial Trailing Zeroes",
+    "exercise": "Given an integer n, return the number of trailing zeroes in n!.",
+    "difficulty": "Medium",
+    "tests": [
+      [3, "0"],
+      [5, "1"],
+      [0, "0"]
+    ],
+    "template": [
+      "def solve(n):",
+      "    # Return number of trailing zeroes in n!",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve(5)"
+  },
+  {
+    "title": "Rotate Array",
+    "exercise": "Given an array nums, rotate the array to the right by k steps and return the rotated array.",
+    "difficulty": "Medium",
+    "tests": [
+      [[1,2,3,4,5,6,7], 3, "[5,6,7,1,2,3,4]"],
+      [[-1,-100,3,99], 2, "[3,99,-1,-100]"],
+      [[1,2], 1, "[2,1]"]
+    ],
+    "template": [
+      "def solve(nums, k):",
+      "    # Return nums rotated right by k steps",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([1,2,3,4,5,6,7], 3)"
+  },
+  {
+    "title": "Contains Duplicate",
+    "exercise": "Given an integer array nums, return True if any value appears at least twice in the array, and False if every element is distinct.",
+    "difficulty": "Easy",
+    "tests": [
+      [[1,2,3,1], "True"],
+      [[1,2,3,4], "False"],
+      [[1,1,1,3,3,4,3,2,4,2], "True"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return True if any value appears at least twice",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve([1,2,3,1])"
+  },
+  {
+    "title": "Power of Two",
+    "exercise": "Given an integer n, return True if it is a power of two, and False otherwise.",
+    "difficulty": "Easy",
+    "tests": [
+      [1, "True"],
+      [16, "True"],
+      [3, "False"]
+    ],
+    "template": [
+      "def solve(n):",
+      "    # Return True if n is a power of two",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve(16)"
+  },
+  {
+    "title": "Missing Number",
+    "exercise": "Given an array nums containing n distinct numbers in the range [0, n], return the only number in the range that is missing from the array.",
+    "difficulty": "Easy",
+    "tests": [
+      [[3,0,1], "2"],
+      [[0,1], "2"],
+      [[9,6,4,2,3,5,7,0,1], "8"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return the missing number in range [0, n]",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve([3,0,1])"
+  },
+  {
+    "title": "First Unique Character in a String",
+    "exercise": "Given a string s, find the first non-repeating character in it and return its index. If it does not exist, return -1.",
+    "difficulty": "Easy",
+    "tests": [
+      ["leetcode", "0"],
+      ["loveleetcode", "2"],
+      ["aabb", "-1"]
+    ],
+    "template": [
+      "def solve(s):",
+      "    # Return index of first non-repeating character, or -1",
+      "    # Your code here",
+      "    return -1"
+    ],
+    "execution": "result = solve('leetcode')"
+  },
+  {
+    "title": "Fizz Buzz",
+    "exercise": "Given an integer n, return a string array answer where answer[i] is 'FizzBuzz' if i is divisible by 3 and 5, 'Fizz' if divisible by 3, 'Buzz' if divisible by 5, or the number as a string otherwise, for i from 1 to n.",
+    "difficulty": "Easy",
+    "tests": [
+      [3, "[1,2,Fizz]"],
+      [5, "[1,2,Fizz,4,Buzz]"],
+      [1, "[1]"]
+    ],
+    "template": [
+      "def solve(n):",
+      "    # Return the FizzBuzz string array from 1 to n",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve(5)"
+  },
+  {
+    "title": "Add Binary",
+    "exercise": "Given two binary strings a and b, return their sum as a binary string.",
+    "difficulty": "Easy",
+    "tests": [
+      ["11", "1", "100"],
+      ["1010", "1011", "10101"],
+      ["0", "0", "0"]
+    ],
+    "template": [
+      "def solve(a, b):",
+      "    # Return the binary string sum of a and b",
+      "    # Your code here",
+      "    return ''"
+    ],
+    "execution": "result = solve('11', '1')"
+  },
+  {
+    "title": "Number of 1 Bits",
+    "exercise": "Given a non-negative integer n, return the number of set bits (1s) in its binary representation.",
+    "difficulty": "Easy",
+    "tests": [
+      [11, "3"],
+      [128, "1"],
+      [7, "3"]
+    ],
+    "template": [
+      "def solve(n):",
+      "    # Return count of set bits in n",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve(11)"
+  },
+  {
+    "title": "Happy Number",
+    "exercise": "Given a positive integer n, return True if n is a happy number, and False otherwise. A happy number eventually reaches 1 when replaced by the sum of the squares of its digits, repeated.",
+    "difficulty": "Easy",
+    "tests": [
+      [19, "True"],
+      [2, "False"],
+      [7, "True"]
+    ],
+    "template": [
+      "def solve(n):",
+      "    # Return True if n is a happy number",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve(19)"
+  },
+  {
+    "title": "Isomorphic Strings",
+    "exercise": "Given two strings s and t, return True if the characters in s can be replaced to get t, with a consistent one-to-one mapping.",
+    "difficulty": "Easy",
+    "tests": [
+      ["egg", "add", "True"],
+      ["foo", "bar", "False"],
+      ["paper", "title", "True"]
+    ],
+    "template": [
+      "def solve(s, t):",
+      "    # Return True if s and t are isomorphic",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve('egg', 'add')"
+  },
+  {
+    "title": "Reverse Linked List",
+    "exercise": "Given the head of a singly linked list, reverse the list and return the new head.",
+    "difficulty": "Easy",
+    "tests": [
+      ["[1,2,3,4,5]", "[5,4,3,2,1]"],
+      ["[1,2]", "[2,1]"],
+      ["[]", "[]"]
+    ],
+    "template": [
+      "class ListNode:",
+      "    def __init__(self, val=0, next=None):",
+      "        self.val = val",
+      "        self.next = next",
+      "",
+      "def solve(head):",
+      "    # Reverse linked list head and return new head",
+      "    # Your code here",
+      "    return None"
+    ],
+    "execution": "result = solve(head)"
+  },
+  {
+    "title": "Remove Duplicates from Sorted List",
+    "exercise": "Given the head of a sorted linked list, delete all duplicates such that each element appears only once and return the linked list sorted.",
+    "difficulty": "Easy",
+    "tests": [
+      ["[1,1,2]", "[1,2]"],
+      ["[1,1,2,3,3]", "[1,2,3]"],
+      ["[]", "[]"]
+    ],
+    "template": [
+      "class ListNode:",
+      "    def __init__(self, val=0, next=None):",
+      "        self.val = val",
+      "        self.next = next",
+      "",
+      "def solve(head):",
+      "    # Remove duplicate values from sorted linked list head",
+      "    # Your code here",
+      "    return None"
+    ],
+    "execution": "result = solve(head)"
+  },
+  {
+    "title": "Middle of the Linked List",
+    "exercise": "Given the head of a singly linked list, return the middle node of the linked list. If there are two middle nodes, return the second middle node.",
+    "difficulty": "Easy",
+    "tests": [
+      ["[1,2,3,4,5]", "[3,4,5]"],
+      ["[1,2,3,4,5,6]", "[4,5,6]"],
+      ["[1]", "[1]"]
+    ],
+    "template": [
+      "class ListNode:",
+      "    def __init__(self, val=0, next=None):",
+      "        self.val = val",
+      "        self.next = next",
+      "",
+      "def solve(head):",
+      "    # Return the middle node of linked list head",
+      "    # Your code here",
+      "    return None"
+    ],
+    "execution": "result = solve(head)"
+  },
+  {
+    "title": "Add Two Numbers",
+    "exercise": "You are given two non-empty linked lists representing two non-negative integers, with digits stored in reverse order. Add the two numbers and return the sum as a linked list.",
+    "difficulty": "Medium",
+    "tests": [
+      ["[2,4,3]", "[5,6,4]", "[7,0,8]"],
+      ["[0]", "[0]", "[0]"],
+      ["[9,9]", "[1]", "[0,0,1]"]
+    ],
+    "template": [
+      "class ListNode:",
+      "    def __init__(self, val=0, next=None):",
+      "        self.val = val",
+      "        self.next = next",
+      "",
+      "def solve(l1, l2):",
+      "    # Add two numbers represented as reversed-digit linked lists",
+      "    # Your code here",
+      "    return None"
+    ],
+    "execution": "result = solve(l1, l2)"
+  },
+  {
+    "title": "Same Tree",
+    "exercise": "Given the roots of two binary trees p and q, return True if they are the same tree (structurally identical with the same node values), and False otherwise.",
+    "difficulty": "Easy",
+    "tests": [
+      ["[1,2,3]", "[1,2,3]", "True"],
+      ["[1,2]", "[1,null,2]", "False"],
+      ["[1,2,1]", "[1,1,2]", "False"]
+    ],
+    "template": [
+      "class TreeNode:",
+      "    def __init__(self, val=0, left=None, right=None):",
+      "        self.val = val",
+      "        self.left = left",
+      "        self.right = right",
+      "",
+      "def solve(p, q):",
+      "    # Return True if trees p and q are identical",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve(p, q)"
+  },
+  {
+    "title": "Subtree of Another Tree",
+    "exercise": "Given the roots of two binary trees root and subRoot, return True if there is a subtree of root with the same structure and node values as subRoot, and False otherwise.",
+    "difficulty": "Easy",
+    "tests": [
+      ["[3,4,5,1,2]", "[4,1,2]", "True"],
+      ["[3,4,5,1,2,null,null,null,null,0]", "[4,1,2]", "False"],
+      ["[1]", "[1]", "True"]
+    ],
+    "template": [
+      "class TreeNode:",
+      "    def __init__(self, val=0, left=None, right=None):",
+      "        self.val = val",
+      "        self.left = left",
+      "        self.right = right",
+      "",
+      "def solve(root, subRoot):",
+      "    # Return True if subRoot is a subtree of root",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve(root, subRoot)"
+  },
+  {
+    "title": "Squares of a Sorted Array",
+    "exercise": "Given an integer array nums sorted in non-decreasing order, return an array of the squares of each number sorted in non-decreasing order.",
+    "difficulty": "Easy",
+    "tests": [
+      [[-4,-1,0,3,10], "[0,1,9,16,100]"],
+      [[-7,-3,2,3,11], "[4,9,9,49,121]"],
+      [[0], "[0]"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return sorted squares of nums",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([-4,-1,0,3,10])"
+  },
+  {
+    "title": "Backspace String Compare",
+    "exercise": "Given two strings s and t, each representing a typed string where '#' means a backspace character, return True if they are equal after processing backspaces.",
+    "difficulty": "Easy",
+    "tests": [
+      ["ab#c", "ad#c", "True"],
+      ["ab##", "c#d#", "True"],
+      ["a#c", "b", "False"]
+    ],
+    "template": [
+      "def solve(s, t):",
+      "    # Return True if s and t are equal after applying backspaces",
+      "    # Your code here",
+      "    return False"
+    ],
+    "execution": "result = solve('ab#c', 'ad#c')"
+  },
+  {
+    "title": "Counting Bits",
+    "exercise": "Given an integer n, return an array ans of length n + 1 where ans[i] is the number of 1's in the binary representation of i, for each i from 0 to n.",
+    "difficulty": "Easy",
+    "tests": [
+      [2, "[0,1,1]"],
+      [5, "[0,1,1,2,1,2]"],
+      [0, "[0]"]
+    ],
+    "template": [
+      "def solve(n):",
+      "    # Return list of set-bit counts for 0..n",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve(5)"
+  },
+  {
+    "title": "Two Sum II - Input Array Is Sorted",
+    "exercise": "Given a 1-indexed array of integers numbers sorted in non-decreasing order and a target, return the 1-indexed indices of the two numbers that add up to target.",
+    "difficulty": "Medium",
+    "tests": [
+      [[2,7,11,15], 9, "[1,2]"],
+      [[2,3,4], 6, "[1,3]"],
+      [[-1,0], -1, "[1,2]"]
+    ],
+    "template": [
+      "def solve(numbers, target):",
+      "    # Return 1-indexed indices of two numbers that sum to target",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([2,7,11,15], 9)"
+  },
+  {
+    "title": "Kth Largest Element in an Array",
+    "exercise": "Given an integer array nums and an integer k, return the kth largest element in the array.",
+    "difficulty": "Medium",
+    "tests": [
+      [[3,2,1,5,6,4], 2, "5"],
+      [[3,2,3,1,2,4,5,5,6], 4, "4"],
+      [[1], 1, "1"]
+    ],
+    "template": [
+      "def solve(nums, k):",
+      "    # Return the kth largest element in nums",
+      "    # Your code here",
+      "    return 0"
+    ],
+    "execution": "result = solve([3,2,1,5,6,4], 2)"
+  },
+  {
+    "title": "Top K Frequent Elements",
+    "exercise": "Given an integer array nums and an integer k, return the k most frequent elements, ordered from most to least frequent.",
+    "difficulty": "Medium",
+    "tests": [
+      [[1,1,1,2,2,3], 2, "[1,2]"],
+      [[1], 1, "[1]"],
+      [[4,4,4,6,6,7], 2, "[4,6]"]
+    ],
+    "template": [
+      "def solve(nums, k):",
+      "    # Return the k most frequent elements in nums",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([1,1,1,2,2,3], 2)"
+  },
+  {
+    "title": "Product of Array Except Self",
+    "exercise": "Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i].",
+    "difficulty": "Medium",
+    "tests": [
+      [[1,2,3,4], "[24,12,8,6]"],
+      [[-1,1,0,-3,3], "[0,0,9,0,0]"],
+      [[2,3], "[3,2]"]
+    ],
+    "template": [
+      "def solve(nums):",
+      "    # Return product of nums except self at each index",
+      "    # Your code here",
+      "    return []"
+    ],
+    "execution": "result = solve([1,2,3,4])"
+  },
+  {
+    "title": "Longest Common Prefix",
+    "exercise": "Given an array of strings strs, return the longest common prefix string amongst all strings. If there is no common prefix, return an empty string.",
+    "difficulty": "Easy",
+    "tests": [
+      [["flower","flow","flight"], "fl"],
+      [["dog","racecar","car"], ""],
+      [["interspecies","interstellar","interstate"], "inters"]
+    ],
+    "template": [
+      "def solve(strs):",
+      "    # Return the longest common prefix of strs",
+      "    # Your code here",
+      "    return ''"
+    ],
+    "execution": "result = solve(['flower','flow','flight'])"
+  }
+]
+}
