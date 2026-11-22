@@ -1,5 +1,5 @@
 export type Screen = "landing" | "signin" | "problem";
-export type CodeLanguage = "python";
+export type CodeLanguage = "python" | "cpp";
 
 export type DsaProblem = {
   id: number;

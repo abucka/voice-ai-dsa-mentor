@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import Base, engine
+from .database import Base, engine, ensure_solved_problems_language_support
 
 from .api import ai_services, problem_workspace, security
 
@@ -18,6 +18,7 @@ def _allowed_origins() -> list[str]:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_solved_problems_language_support()
     yield
 
 app = FastAPI(title="Voice AI DSA Mentor API", version="0.1.0", lifespan=lifespan)

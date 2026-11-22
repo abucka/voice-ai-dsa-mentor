@@ -18,14 +18,14 @@ PROBLEM_SUMMARIES: dict[ProblemId, str] = {
     id: element["title"] for id, element in enumerate(PROBLEM_DATA["exercises"])
 }
 
-def update_problem_solution(db: Session, problem_id: ProblemId, code: str, passed: bool):
-    problem = db.get(SolvedProblems, problem_id)
+def update_problem_solution(db: Session, problem_id: ProblemId, language: str, code: str, passed: bool):
+    problem = db.get(SolvedProblems, (problem_id, language))
 
     if problem:
         problem.solution = code
         problem.is_solved = passed
     else:
-        problem = SolvedProblems(problem_id=problem_id, solution=code, is_solved=passed)
+        problem = SolvedProblems(problem_id=problem_id, language=language, solution=code, is_solved=passed)
         db.add(problem)
 
     db.commit()

@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { askTutor } from "../services/helpTutor";
 import { transcribeVoice } from "../services/voiceTranscriber";
+import { CodeLanguage } from "../types";
 
 type TutorHelpPanelProps = {
   code: string;
   problemId: number;
+  language: CodeLanguage;
 };
 
-export default function TutorHelpPanel({ code, problemId }: TutorHelpPanelProps) {
+export default function TutorHelpPanel({ code, problemId, language }: TutorHelpPanelProps) {
   const [helpQuestion, setHelpQuestion] = useState("");
   const [helpAnswer, setHelpAnswer] = useState("");
   const [helpStatus, setHelpStatus] = useState("");
@@ -44,7 +46,7 @@ export default function TutorHelpPanel({ code, problemId }: TutorHelpPanelProps)
     setTutorMessages((previous) => [...previous, { role: "user", content: trimmedQuestion }]);
 
     try {
-      const result = await askTutor(problemId, "python", code, trimmedQuestion);
+      const result = await askTutor(problemId, language, code, trimmedQuestion);
       setTutorMessages((previous) => [...previous, { role: "assistant", content: result.answer }]);
       setHelpAnswer(result.answer);
       setHelpStatus("Tutor answered.");

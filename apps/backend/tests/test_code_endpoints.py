@@ -22,6 +22,25 @@ def solve(nums, target):
     return []
 """
 
+CORRECT_CPP_LONGEST_SUBSTRING_SOLUTION = """
+#include <bits/stdc++.h>
+using namespace std;
+
+int solve(string s) {
+    unordered_map<char, int> seen;
+    int left = 0;
+    int best = 0;
+    for (int right = 0; right < s.size(); ++right) {
+        if (seen.count(s[right]) && seen[s[right]] >= left) {
+            left = seen[s[right]] + 1;
+        }
+        seen[s[right]] = right;
+        best = max(best, right - left + 1);
+    }
+    return best;
+}
+"""
+
 
 def test_run_code_returns_stdout_for_a_valid_submission(client):
     response = client.post(
@@ -82,6 +101,19 @@ def test_run_code_works_for_a_multi_argument_problem(client):
     assert body["stdout"].strip() == "[0,1]"
 
 
+def test_run_code_supports_cpp(client):
+    response = client.post(
+        "/api/code/run",
+        json={"problemId": 0, "language": "cpp", "code": CORRECT_CPP_LONGEST_SUBSTRING_SOLUTION},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["language"] == "cpp"
+    assert body["exitCode"] == 0
+    assert body["stdout"].strip() == "3"
+
+
 def test_submit_code_works_for_a_multi_argument_problem(client):
     response = client.post(
         "/api/code/submit",
@@ -107,6 +139,31 @@ def test_submit_code_reports_a_runtime_error_reason(client):
     body = response.json()
     assert body["passed"] is False
     assert all(result["reason"] == "Runtime error" for result in body["results"])
+
+
+def test_problem_solutions_are_stored_per_language(client):
+    python_solution = "def solve(s):\n    return len(s)\n"
+    cpp_solution = "#include <bits/stdc++.h>\nusing namespace std;\nint solve(string s) { return (int)s.size(); }\n"
+
+    python_submit = client.post(
+        "/api/code/submit",
+        json={"problemId": 0, "language": "python", "code": python_solution},
+    )
+    assert python_submit.status_code == 200
+
+    cpp_submit = client.post(
+        "/api/code/submit",
+        json={"problemId": 0, "language": "cpp", "code": cpp_solution},
+    )
+    assert cpp_submit.status_code == 200
+
+    python_fetch = client.get("/api/problems/0/solution?language=python")
+    cpp_fetch = client.get("/api/problems/0/solution?language=cpp")
+
+    assert python_fetch.status_code == 200
+    assert cpp_fetch.status_code == 200
+    assert python_fetch.json()["solution"] == python_solution
+    assert cpp_fetch.json()["solution"] == cpp_solution
 
 
 def test_call_openai_tutor_uses_openai_client(monkeypatch):

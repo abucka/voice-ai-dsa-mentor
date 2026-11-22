@@ -31,6 +31,48 @@ class Base(DeclarativeBase):
     pass
 
 
+def ensure_solved_problems_language_support() -> None:
+    if not DATABASE_URL or not DATABASE_URL.startswith("sqlite"):
+        return
+
+    with engine.begin() as connection:
+        table_exists = connection.exec_driver_sql(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='solved_problems'"
+        ).fetchone()
+        if not table_exists:
+            return
+
+        columns = connection.exec_driver_sql("PRAGMA table_info(solved_problems)").fetchall()
+        if any(column[1] == "language" for column in columns):
+            return
+
+        legacy_rows = connection.exec_driver_sql(
+            "SELECT problem_id, solution, is_solved FROM solved_problems"
+        ).fetchall()
+
+        connection.exec_driver_sql("DROP TABLE IF EXISTS solved_problems_legacy")
+        connection.exec_driver_sql("ALTER TABLE solved_problems RENAME TO solved_problems_legacy")
+        connection.exec_driver_sql(
+            """
+            CREATE TABLE solved_problems (
+                problem_id INTEGER NOT NULL,
+                language TEXT NOT NULL DEFAULT 'python',
+                solution TEXT NOT NULL DEFAULT '',
+                is_solved BOOLEAN NOT NULL DEFAULT 0,
+                PRIMARY KEY (problem_id, language)
+            )
+            """
+        )
+
+        for problem_id, solution, is_solved in legacy_rows:
+            connection.exec_driver_sql(
+                "INSERT INTO solved_problems (problem_id, language, solution, is_solved) VALUES (?, 'python', ?, ?)",
+                (problem_id, solution, bool(is_solved)),
+            )
+
+        connection.exec_driver_sql("DROP TABLE solved_problems_legacy")
+
+
 def get_db():
     db = SessionLocal()
     try:

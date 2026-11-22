@@ -32,9 +32,9 @@ export default function ProblemWorkspace({
   const [isSolved, setisSolved] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [language, setLanguage] = useState<"python" | "cpp">("python");
 
-  const language = "python" as const;
-  const filename = CODE_LANGUAGES[0]?.filename ?? "main.py";
+  const filename = CODE_LANGUAGES.find((entry) => entry.id === language)?.filename ?? "main.py";
   const progressPercent = Math.min(100, Math.max(0, (currentProblemIndex / totalProblems) * 100));
 
   async function handlePreviousProblem() {
@@ -50,18 +50,22 @@ export default function ProblemWorkspace({
   }
 
   useEffect(() => {
-    fetchSolution();
+    void fetchSolution();
     setRunOutput("");
     setIsRunning(false);
     setisSolved(false);
     setSubmitOutput("");
     setIsSubmitting(false);
-  }, [currentProblem.id]);
+  }, [currentProblem.id, language]);
+
+  useEffect(() => {
+    setCode(getSolveTemplate(currentProblem.id, language));
+  }, [language, currentProblem.id]);
 
   async function fetchSolution() {
 
       const response = await fetch(
-        `${API_BASE_URL}/api/problems/${currentProblem.id}/solution`
+        `${API_BASE_URL}/api/problems/${currentProblem.id}/solution?language=${language}`
       );
 
       const data = await response.json();
@@ -70,17 +74,17 @@ export default function ProblemWorkspace({
         throw new Error(data.detail || "Failed to fetch solution");
       }
       
-      data.solution === "" ? setCode(getSolveTemplate(currentProblem.id)) : setCode(data.solution);
+      data.solution === "" ? setCode(getSolveTemplate(currentProblem.id, language)) : setCode(data.solution);
       setisSolved(data.is_solved);
 
   }
 
   function handleReset() {
-    setCode(getSolveTemplate(currentProblem.id));
+    setCode(getSolveTemplate(currentProblem.id, language));
   }
 
-  function handleLanguageChange() {
-    // Python is the only supported language now.
+  function handleLanguageChange(nextLanguage: "python" | "cpp") {
+    setLanguage(nextLanguage);
   }
 
   function handleCodeChange(nextCode: string) {
@@ -173,7 +177,7 @@ export default function ProblemWorkspace({
 
       <div className="workspaceInsights" aria-label="Current learning context">
         <p className="workspaceMetaText">Problem {currentProblemIndex} of {totalProblems}</p>
-        <p className="workspaceMetaText">Language: Python</p>
+        <p className="workspaceMetaText">Language: {language === "cpp" ? "C++" : "Python"}</p>
       </div>
       <div className="progressTrack" role="progressbar" aria-valuenow={currentProblemIndex} aria-valuemin={1} aria-valuemax={totalProblems}>
         <span style={{ width: `${progressPercent}%` }} />
@@ -222,7 +226,7 @@ export default function ProblemWorkspace({
           </div>
 
           <div className="workspaceSecondaryColumn">
-            <TutorHelpPanel code={code} problemId={currentProblem.id} />
+            <TutorHelpPanel code={code} problemId={currentProblem.id} language={language} />
           </div>
         </div>
 

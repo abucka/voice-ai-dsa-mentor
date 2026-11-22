@@ -27,7 +27,8 @@ class AuthToken(Base):
 class SolvedProblems(Base):
     __tablename__ = "solved_problems"
 
-    problem_id: Mapped[int] = mapped_column(Integer, default=0, primary_key=True)
+    problem_id: Mapped[int] = mapped_column(Integer, primary_key=True, default=0)
+    language: Mapped[str] = mapped_column(String, primary_key=True, default="python")
     solution: Mapped[str] = mapped_column(String, default="", nullable=False)
     is_solved: Mapped[bool] = mapped_column(
         Boolean,

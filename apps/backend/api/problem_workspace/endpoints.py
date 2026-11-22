@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ...database import get_db
@@ -33,10 +33,10 @@ def submit_code(payload: SubmitCodeRequest, db: Session = Depends(get_db)) -> Su
     if not tests:
         raise HTTPException(status_code=422, detail="No tests found for this problem")
     
-    results, passed_tests, total_tests = evaluate_submission(payload.problemId, payload.code)
+    results, passed_tests, total_tests = evaluate_submission(payload.problemId, payload.code, payload.language)
 
     passed = passed_tests == total_tests
-    update_problem_solution(db, payload.problemId, payload.code, passed)
+    update_problem_solution(db, payload.problemId, payload.language, payload.code, passed)
 
     return SubmitCodeResponse(
         problemId=payload.problemId,
@@ -51,9 +51,10 @@ def submit_code(payload: SubmitCodeRequest, db: Session = Depends(get_db)) -> Su
 @router.get("/api/problems/{problem_id}/solution", response_model=ProblemSolution, status_code=200)
 def get_solution(
     problem_id: ProblemId,
+    language: str = Query(default="python"),
     db: Session = Depends(get_db),
 ) -> str:
-    problem = db.get(SolvedProblems, problem_id)
+    problem = db.get(SolvedProblems, (problem_id, language))
     if not problem:
         return ProblemSolution(solution="", is_solved=False)
     return ProblemSolution(solution=problem.solution, is_solved=problem.is_solved)
