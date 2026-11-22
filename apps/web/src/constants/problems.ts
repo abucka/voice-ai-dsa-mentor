@@ -14,3 +14,4 @@ export const PROBLEMS: DsaProblem[] = ProblemData.exercises.map((item, index) =>
 
 
 export const STORAGE_KEY = "dsa:last-problem-id";
+export const LANG_STORAGE_KEY = "dsa:last-lang-id";

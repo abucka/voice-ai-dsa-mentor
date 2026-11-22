@@ -58,6 +58,7 @@ export default function App() {
 
   function saveProgressLocal(problemId: number) {
     setLastProblemId(problemId);
+    saveProblemIdLocally(problemId);
   }
 
   async function saveProgress(problemId: DsaProblem["id"]) {

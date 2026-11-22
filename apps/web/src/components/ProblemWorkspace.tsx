@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import CodeEditorPanel from "./CodeEditorPanel";
 import TutorHelpPanel from "./TutorHelpPanel";
 import { CODE_LANGUAGES, getSolveTemplate } from "../constants/codeTemplates";
-import { DsaProblem } from "../types";
+import { CodeLanguage, DsaProblem } from "../types";
 import { PROBLEMS } from "../constants/problems";
 import { runCode } from "../services/codeRunner";
 import { submitCode } from "../services/codeSubmitter";
+import { getInitialLangId, saveLangIdLocally } from "../services/progressStorage";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
@@ -32,7 +33,14 @@ export default function ProblemWorkspace({
   const [isSolved, setisSolved] = useState(false);
   const [submitOutput, setSubmitOutput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [language, setLanguage] = useState<"python" | "cpp">("python");
+  const [languageSelection, setLanguageSelection] = useState(() => ({
+    problemId: currentProblem.id,
+    language: getInitialLangId(currentProblem.id)
+  }));
+
+  const language: CodeLanguage = languageSelection.problemId === currentProblem.id
+    ? languageSelection.language
+    : getInitialLangId(currentProblem.id);
 
   const filename = CODE_LANGUAGES.find((entry) => entry.id === language)?.filename ?? "main.py";
   const progressPercent = Math.min(100, Math.max(0, (currentProblemIndex / totalProblems) * 100));
@@ -62,6 +70,13 @@ export default function ProblemWorkspace({
     setCode(getSolveTemplate(currentProblem.id, language));
   }, [language, currentProblem.id]);
 
+  useEffect(() => {
+    setLanguageSelection((prev) => ({
+      problemId: currentProblem.id,
+      language: prev.problemId === currentProblem.id ? prev.language : getInitialLangId(currentProblem.id)
+    }));
+  }, [currentProblem.id]);
+
   async function fetchSolution() {
 
       const response = await fetch(
@@ -84,7 +99,11 @@ export default function ProblemWorkspace({
   }
 
   function handleLanguageChange(nextLanguage: "python" | "cpp") {
-    setLanguage(nextLanguage);
+    setLanguageSelection({
+      problemId: currentProblem.id,
+      language: nextLanguage
+    });
+    saveLangIdLocally(currentProblem.id, nextLanguage);
   }
 
   function handleCodeChange(nextCode: string) {

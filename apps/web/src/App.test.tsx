@@ -19,7 +19,9 @@ vi.mock("./services/authService", () => ({
 
 vi.mock("./services/progressStorage", () => ({
   getInitialProblemId: () => 1,
-  saveProblemIdLocally: vi.fn()
+  getInitialLangId: () => "python",
+  saveProblemIdLocally: vi.fn(),
+  saveLangIdLocally: vi.fn()
 }));
 
 vi.mock("./services/codeRunner", () => ({ runCode: vi.fn() }));
@@ -35,7 +37,7 @@ describe("App", () => {
   it("renders the landing experience and transitions to sign-in", () => {
     render(<App />);
 
-    expect(screen.getByText(/Train for interviews with an AI pair mentor/i)).toBeTruthy();
+    expect(screen.getByText(/Train for interviews with an AI mentor/i)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /start a practice session/i }));
 
